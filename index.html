@@ -249,7 +249,8 @@ const S = {
   calendars: [],
   events: [],
   lastSync: null,
-  syncError: false
+  syncError: false,
+  lastError: ''
 };
 
 const $ = id => document.getElementById(id);
@@ -307,7 +308,7 @@ function handleRedirect() {
   if (h.get('state') !== LS.get('kk.state', null)) return 'Ugyldig innloggingsforsøk. Prøv igjen.';
   LS.del('kk.state');
   if (h.get('access_token')) {
-    S.token = { v: h.get('access_token'), exp: Date.now() + (parseInt(h.get('expires_in'), 10) || 3600) * 1000 };
+    S.token = { v: h.get('access_token'), exp: Date.now() + (parseInt(h.get('expires_in'), 10) || 3600) * 1000, scope: h.get('scope') || '' };
     LS.set('kk.token', S.token);
     LS.del('kk.silentFailed');
     return null;
@@ -365,7 +366,19 @@ async function api(path, params) {
   if (params) for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
   const r = await fetch(u, { headers: { Authorization: 'Bearer ' + S.token.v } });
   if (r.status === 401) { S.token = null; LS.del('kk.token'); authLost(); throw new Error('auth'); }
-  if (!r.ok) throw new Error('HTTP ' + r.status);
+  if (!r.ok) {
+    let msg = 'HTTP ' + r.status;
+    try {
+      const j = await r.json();
+      const reason = j.error && j.error.errors && j.error.errors[0] && j.error.errors[0].reason;
+      if (reason === 'accessNotConfigured' || /has not been used|is disabled/i.test(j.error.message || ''))
+        msg = 'Google Calendar API er ikke aktivert i Google Cloud-prosjektet. Gå til APIs & Services → Library → Google Calendar API → Enable.';
+      else if (r.status === 403 && /insufficient/i.test(JSON.stringify(j)))
+        msg = 'Mangler tilgang til kalenderen. Logg ut, logg inn igjen og huk av for kalendertilgang.';
+      else if (j.error && j.error.message) msg = j.error.message;
+    } catch (e) {}
+    throw new Error(msg);
+  }
   return r.json();
 }
 
@@ -419,8 +432,9 @@ async function sync(full) {
   try {
     if (full || !S.calendars.length) await loadCalendars();
     await loadEvents();
+    S.lastError = '';
   } catch (e) {
-    if (e.message !== 'auth') S.syncError = true;
+    if (e.message !== 'auth') { S.syncError = true; S.lastError = e.message; }
   } finally {
     syncing = false;
     render();
@@ -522,7 +536,8 @@ function render() {
   }
   $('days').innerHTML = html;
   // synkstatus
-  $('sync').innerHTML = S.lastSync ? `<span class="dot ${S.syncError ? 'warn' : ''}"></span>${S.syncError ? 'Delvis synk' : 'Synket'} ${fmtT(S.lastSync)}` : '';
+  $('sync').innerHTML = S.lastError ? '<span class="dot warn"></span>Synkfeil – se innstillinger'
+    : S.lastSync ? `<span class="dot ${S.syncError ? 'warn' : ''}"></span>${S.syncError ? 'Delvis synk' : 'Synket'} ${fmtT(S.lastSync)}` : '';
 }
 
 let lastDay = sod(new Date()).getTime();
@@ -595,7 +610,7 @@ function renderCalList() {
     const on = fresh ? (S.selected || []).includes(c.id) : checked.has(c.id);
     return `<label class="cal${isSchool ? ' dis' : ''}"><input type="checkbox" value="${esc(c.id)}" ${on && !isSchool ? 'checked' : ''} ${isSchool ? 'disabled' : ''}>
       <span class="sw" style="background:${esc(c.color)}"></span><span>${esc(c.name)}${isSchool ? ' · skole' : ''}</span></label>`;
-  }).join('') || '<div class="empty">Ingen kalendere funnet</div>';
+  }).join('') || `<div class="msg">${esc(S.lastError || 'Ingen kalendere funnet.')}</div>`;
 }
 
 function saveSettings() {
@@ -664,6 +679,12 @@ async function start() {
     }
     clearSession();
     showLogin();
+    return;
+  }
+
+  if (S.token.scope && !/calendar/.test(S.token.scope)) {
+    clearSession();
+    showLogin('Du ga ikke tilgang til kalenderen. Logg inn igjen og huk av for «Se kalenderne dine» når Google spør.');
     return;
   }
 
