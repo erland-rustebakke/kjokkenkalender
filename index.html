@@ -383,7 +383,7 @@ async function api(path, params) {
 }
 
 async function loadCalendars() {
-  const d = await api('users/me/calendarList', { maxResults: '250' });
+  const d = await api('users/me/calendarList', { maxResults: '250', showHidden: 'true' });
   S.calendars = (d.items || []).map(c => ({
     id: c.id, name: c.summaryOverride || c.summary, color: c.backgroundColor || '#64748b',
     primary: !!c.primary, visible: !!c.selected
