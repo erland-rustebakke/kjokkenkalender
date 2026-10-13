@@ -176,11 +176,17 @@ button{cursor:pointer}
 .wp-ev.now{outline:2px solid var(--accent)}
 .wp-a{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .wp-school .wp-a{color:var(--text)}
-.wp-b{font-size:14px;font-weight:600;line-height:1.25;overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto}
+.wp-b{font-size:13px;font-weight:600;line-height:1.25;overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto;letter-spacing:-.01em}
+.wp5 .wp-b{font-size:14px}
 .wp-c{font-size:11.5px;color:var(--muted);overflow-wrap:break-word;hyphens:auto}
 .wp-rem{font-size:12px;font-weight:600;color:var(--warn);background:rgba(217,119,6,.1);border-radius:6px;padding:4px 6px;margin-bottom:6px}
 .wp-pill{font-size:12px;color:#fff;border-radius:6px;padding:3px 6px;margin-bottom:6px}
 .wp-free{font-size:13px;color:var(--muted);padding:2px}
+.wp.wp5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.tt-l2{border-left:4px solid var(--kc);background:var(--bg1);border-radius:8px;padding:5px 7px;margin-bottom:5px}
+.tt-l2.now{background:var(--accent-soft);outline:2px solid var(--accent)}
+.tt-l2.done{opacity:.45}
+.tt-l2.extra .wp-b{font-weight:400;font-style:italic;color:var(--muted)}
 .tt-col h4{margin:0 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .tt-col.today h4{color:var(--accent)}
 .tt-l{background:var(--solid);border:1px solid var(--line);border-left:4px solid var(--kc);border-radius:8px;padding:5px 7px;margin-bottom:5px}
@@ -227,13 +233,14 @@ button{cursor:pointer}
 
 @media (max-width:1000px) and (min-width:761px){
   .wp{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .wp.wp5{grid-template-columns:repeat(5,minmax(0,1fr))}
 }
 @media (max-width:760px){
   .wrap{padding:12px 14px 104px}
   .grid2{grid-template-columns:1fr}
   .top .clock{font-size:28px}
   .tt-grid{grid-template-columns:1fr}
-  .wp{grid-template-columns:1fr}
+  .wp,.wp.wp5{grid-template-columns:1fr}
   .wp-day{min-height:0}
   .wp-day.past{display:none}
   .frow.kid,.frow.chorer{grid-template-columns:1fr 1fr}
@@ -882,23 +889,30 @@ function renderKid(i, now) {
     const acts = eventsOn(d, e => e.kind === 'act' && kidMatch(k, e));
     const due = S.tasks.filter(t => t.due === dkey(d) && t.title.toLowerCase().startsWith(k.name.toLowerCase() + ':'));
     let h = due.map(t => `<div class="wp-rem">Husk: ${esc(t.title.slice(k.name.length + 1).trim())}</div>`).join('');
-    h += sd.allDay.map(e => `<div class="wp-pill" style="background:${esc(e.color)}">${esc(e.title)}</div>`).join('');
-    if (sd.timed.length) {
-      const cur = isToday ? sd.timed.find(e => e.start <= now && e.end > now) : null;
-      h += `<div class="wp-school" style="--kc:${esc(color)}"><div class="wp-a"><b>Skole</b> <span style="white-space:nowrap">${fmtT(sd.first)}–${fmtT(sd.last)}</span></div>
-        <div class="wp-ls">${sd.timed.map(e => `<div class="${e === cur ? 'now' : ''}${EXTRA_RE.test(e.title) ? ' extra' : ''}"><span>${fmtT(e.start)}</span>${esc(e.title)}</div>`).join('')}</div></div>`;
-    }
     h += acts.map(e => {
       const t = e.allDay ? 'Hele dagen' : (e.start < d ? 'til ' + fmtT(e.end) : fmtT(e.start) + (e.end <= addDays(d, 1) && e.end > e.start ? '–' + fmtT(e.end) : ''));
       const nowCls = !e.allDay && e.start <= now && e.end > now ? ' now' : '';
       return `<div class="wp-ev${nowCls}" style="--c:${esc(e.color)}"><div class="wp-a">${esc(t)}</div><div class="wp-b">${esc(e.title)}</div>${e.loc ? `<div class="wp-c">${esc(e.loc)}</div>` : ''}</div>`;
     }).join('');
-    if (!h) h = '<div class="wp-free">Fri</div>';
+    if (!h) h = '<div class="wp-free">Ingenting</div>';
     return `<div class="wp-day${isToday ? ' today' : ''}${past ? ' past' : ''}"><div class="wp-h"><span class="dn">${esc(d.toLocaleDateString('nb-NO', { weekday: 'short' }).replace('.', ''))}</span><span class="dd">${d.getDate()}</span>${isToday ? '<span class="tg">I dag</span>' : ''}</div>${h}</div>`;
   }).join('');
-  const weekHTML = `<section class="card"><div class="wkhead"><h2>Ukeplan <span class="muted" style="font-size:14px;font-weight:400">uke ${isoWeek(mon)} · ${fmtD(mon)}–${fmtD(sun)}</span></h2>
+  const weekHTML = `<section class="card"><div class="wkhead"><h2>Aktiviteter <span class="muted" style="font-size:14px;font-weight:400">uke ${isoWeek(mon)} · ${fmtD(mon)}–${fmtD(sun)}</span></h2>
     <div class="wknav"><button data-act="kw-1" aria-label="Forrige uke">‹</button><button data-act="kw0" style="font-size:13px;width:auto;padding:0 8px">Denne uken</button><button data-act="kw1" aria-label="Neste uke">›</button></div></div>
     <div class="wp">${days}</div></section>`;
+  let ttHTML = '';
+  if (k.school) {
+    ttHTML = `<section class="card" style="margin-top:14px"><div class="wkhead"><h2>Timeplan <span class="muted" style="font-size:14px;font-weight:400">uke ${isoWeek(mon)}</span></h2></div><div class="wp wp5">` +
+      [0, 1, 2, 3, 4].map(n => {
+        const d = addDays(mon, n), sd = schoolDay(k, d), isToday = sameDay(d, now);
+        const cur = isToday ? sd.timed.find(e => e.start <= now && e.end > now) : null;
+        let h = sd.allDay.map(e => `<div class="wp-pill" style="background:${esc(e.color)}">${esc(e.title)}</div>`).join('');
+        h += sd.timed.map(e => `<div class="tt-l2${e === cur ? ' now' : ''}${EXTRA_RE.test(e.title) ? ' extra' : ''}${isToday && e.end <= now ? ' done' : ''}" style="--kc:${esc(color)}">
+          <div class="wp-a">${fmtT(e.start)}–${fmtT(e.end)}</div><div class="wp-b">${esc(e.title)}</div>${e.desc ? `<div class="wp-c">${esc(e.desc)}</div>` : ''}</div>`).join('');
+        const sub = sd.timed.length ? `<span class="muted" style="margin-left:auto;font-size:12px">${fmtT(sd.first)}–${fmtT(sd.last)}</span>` : '';
+        return `<div class="wp-day${isToday ? ' today' : ''}${d < sod(now) ? ' past' : ''}"><div class="wp-h"><span class="dn">${esc(d.toLocaleDateString('nb-NO', { weekday: 'short' }).replace('.', ''))}</span><span class="dd">${d.getDate()}</span>${sub}</div>${h || '<div class="wp-free">Fri</div>'}</div>`;
+      }).join('') + '</div></section>';
+  }
   // tjen penger
   const chores = choresFor(k.name);
   const choreHTML = chores.map(c => {
@@ -917,7 +931,8 @@ function renderKid(i, now) {
       <section class="card"><div class="ctitle">Tjen penger<span class="muted">Kryss av når du er ferdig</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
     </div>
     ${myTasks.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${myTasks.map(taskRow).join('')}</section>` : ''}
-    ${weekHTML}`;
+    ${weekHTML}
+    ${ttHTML}`;
 }
 
 // ---------- Hovedrender ----------
