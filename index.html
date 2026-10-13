@@ -351,7 +351,7 @@ const S = {
   calendars: [], events: [], taskLists: [], tasks: [], taskListId: null,
   weather: null, deps: null,
   view: 'home', selDay: null, weekOffset: 0, chip: 'all', adding: false,
-  dinnerTips: null, dinnerLoading: false, matImportOpen: false, schoolPasteOpen: false, schoolKid: 'all',
+  dinnerTips: null, dinnerLoading: false, matImportOpen: false, schoolPasteOpen: false, schoolKid: 'all', schoolDraft: '',
   errors: {}, lastSync: null
 };
 
@@ -917,6 +917,8 @@ function schoolDay(k, day) {
   const base = core.length ? core : timed;
   return { evs, timed, allDay: evs.filter(e => e.allDay), first: base[0].start, last: base.reduce((m, e) => e.end > m ? e.end : m, base[0].end) };
 }
+const GYM_RE = /gym|kroppsøving/i;
+const gymLessonsOn = sd => sd.timed.filter(e => GYM_RE.test(e.title));
 function schoolStatus(k, now) {
   const sd = schoolDay(k, sod(now));
   if (!sd.timed.length) return sd.allDay.length ? esc(sd.allDay.map(e => e.title).join(', ')) : 'Fri fra skolen';
@@ -992,7 +994,7 @@ function schoolPasteForm() {
   return `<form data-form="schoolmsg" style="margin-bottom:10px">
     <div class="small" style="margin-bottom:6px">Lim inn meldingen fra skolen – vi finner ut hva du må huske og hvilken dag.</div>
     ${schoolKidChips()}
-    <textarea name="t" rows="3" placeholder="F.eks: Hei! Husk at Marie må ha med badetøy til torsdag." style="width:100%;border-radius:12px;border:1px solid var(--line);background:var(--bg1);padding:10px;font:inherit;color:inherit;resize:vertical"></textarea>
+    <textarea name="t" rows="3" placeholder="F.eks: Hei! Husk at Marie må ha med badetøy til torsdag." style="width:100%;border-radius:12px;border:1px solid var(--line);background:var(--bg1);padding:10px;font:inherit;color:inherit;resize:vertical">${esc(S.schoolDraft)}</textarea>
     <button class="btn primary" style="margin-top:8px">Legg i huskelisten</button></form>${errBox('schoolmsg')}`;
 }
 function taskRow(t) {
@@ -1136,6 +1138,7 @@ function renderKid(i, now) {
     const acts = eventsOn(d, e => e.kind === 'act' && kidMatch(k, e));
     const due = S.tasks.filter(t => t.due === dkey(d) && t.title.toLowerCase().startsWith(k.name.toLowerCase() + ':'));
     let h = due.map(t => `<div class="wp-rem">Husk: ${esc(t.title.slice(k.name.length + 1).trim())}</div>`).join('');
+    h += gymLessonsOn(sd).map(e => `<div class="wp-rem">Husk tøy til ${esc(e.title)}</div>`).join('');
     h += acts.map(e => {
       const t = e.allDay ? 'Hele dagen' : (e.start < d ? 'til ' + fmtT(e.end) : fmtT(e.start) + (e.end <= addDays(d, 1) && e.end > e.start ? '–' + fmtT(e.end) : ''));
       const nowCls = !e.allDay && e.start <= now && e.end > now ? ' now' : '';
@@ -1171,13 +1174,15 @@ function renderKid(i, now) {
     .map(l => `${esc(parseDate(l.date).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' }))}: ${esc(l.title)} +${nok(l.amount)}`).join('<br>');
   // huskepunkter
   const myTasks = tasksFor(k.name);
+  const gymNear = k.school ? [0, 1].flatMap(n => { const day = addDays(sod(now), n); return gymLessonsOn(schoolDay(k, day)).map(e => ({ day, title: e.title })); }) : [];
+  const gymRow = g => `<div class="task"><span class="chk" style="display:grid;place-items:center;opacity:.5" aria-hidden="true">👕</span><div><div class="tt">Husk tøy til ${esc(g.title)}</div><div class="due">${esc(dayLabel(g.day))}</div></div></div>`;
 
   return `<div class="khead">${avatar(k, i)}<h1>${esc(k.name)}</h1><div class="saldo"><div class="small">Tjent</div><div class="amt">${nok(balance(k.name))}</div></div></div>
     <div class="grid2">
       <section class="card">${schoolHTML}</section>
       <section class="card"><div class="ctitle">Tjen penger<span class="muted">Kryss av når du er ferdig</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
     </div>
-    ${myTasks.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${myTasks.map(taskRow).join('')}</section>` : ''}
+    ${myTasks.length || gymNear.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${gymNear.map(gymRow).join('')}${myTasks.map(taskRow).join('')}</section>` : ''}
     ${weekHTML}
     ${ttHTML}`;
 }
@@ -1375,7 +1380,10 @@ $('settings').addEventListener('click', e => { if (e.target.id === 'settings') c
 $('view').addEventListener('click', async e => {
   const t = e.target.closest('[data-act],[data-chip],[data-day],[data-kid],[data-schoolkid]'); if (!t) return;
   if (t.dataset.chip) { S.chip = t.dataset.chip; return render(); }
-  if (t.dataset.schoolkid) { S.schoolKid = t.dataset.schoolkid; t.blur(); return render(); }
+  if (t.dataset.schoolkid) {
+    const ta = document.querySelector('[data-form=schoolmsg] textarea'); if (ta) S.schoolDraft = ta.value;
+    S.schoolKid = t.dataset.schoolkid; t.blur(); return render();
+  }
   if (t.dataset.day) { S.selDay = parseDate(t.dataset.day); return render(); }
   const a = t.dataset.act;
   if (!a && t.dataset.kid != null) { S.view = +t.dataset.kid; S.kidWeek = 0; window.scrollTo(0, 0); return render(); }
@@ -1418,7 +1426,7 @@ $('view').addEventListener('click', async e => {
     return;
   }
   if (a === 'importtoggle') { S.matImportOpen = !S.matImportOpen; return render(); }
-  if (a === 'schooltoggle') { S.schoolPasteOpen = !S.schoolPasteOpen; return render(); }
+  if (a === 'schooltoggle') { S.schoolPasteOpen = !S.schoolPasteOpen; if (S.schoolPasteOpen) { S.schoolDraft = ''; S.schoolKid = 'all'; } return render(); }
 });
 $('view').addEventListener('submit', e => {
   const f1 = e.target.closest('[data-form=task]');
@@ -1442,7 +1450,7 @@ $('view').addEventListener('submit', e => {
       const kidPrefixRe = new RegExp('^(' + kids().map(k => k.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + '):\\s*', 'i');
       items.forEach(it => { it.title = chosen.name + ': ' + it.title.replace(kidPrefixRe, ''); it.kid = chosen.name; });
     }
-    S.schoolPasteOpen = false; S.schoolKid = 'all'; delete S.errors.schoolmsg;
+    S.schoolPasteOpen = false; S.schoolKid = 'all'; S.schoolDraft = ''; delete S.errors.schoolmsg;
     Promise.all(items.map(it => addReminder(it.title, it.due))).then(() => {
       toast(items.length > 1 ? `La til ${items.length} punkter i huskelisten` : `La til: «${items[0].title}»${items[0].due ? ' · ' + dayLabel(items[0].due) : ''}`);
     });
