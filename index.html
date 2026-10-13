@@ -198,11 +198,15 @@ button{cursor:pointer}
 .tt-l{background:var(--solid);border:1px solid var(--line);border-left:4px solid var(--kc);border-radius:8px;padding:5px 7px;margin-bottom:5px}
 .tt-l .a{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .tt-l .b{font-size:13px;line-height:1.2;overflow-wrap:anywhere}
-.chore{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.chore{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .chore:first-of-type{border-top:0}
-.chore .chk{width:28px;height:28px;border-radius:8px}
 .chore .price{font-weight:700;font-variant-numeric:tabular-nums;color:var(--ok)}
-.chore.done .ct{text-decoration:line-through;color:var(--muted)}
+.chore.done .ct{color:var(--text)}
+.ccount{display:flex;align-items:center;gap:8px}
+.ccbtn{width:30px;height:30px;border-radius:9px;border:2px solid var(--muted);background:transparent;color:var(--text);font-size:17px;font-weight:700;line-height:1;display:grid;place-items:center;padding:0}
+.ccbtn:disabled{opacity:.3}
+.ccbtn.plus{border-color:var(--accent);color:var(--accent)}
+.ccnum{min-width:18px;text-align:center;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
 .hist{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.6}
 
 /* Innstillinger */
@@ -951,7 +955,6 @@ async function syncAll(full) {
 // =================== VISNING: felles ===================
 function kidColor(k, i) { const c = S.calendars.find(x => x.id === k.school); return c ? c.color : KID_COLORS[i % KID_COLORS.length]; }
 const avatar = (k, i) => `<span class="av" style="background:${esc(kidColor(k, i))}">${esc(k.name.charAt(0).toUpperCase())}</span>`;
-const checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
 function eventsOn(day, filter) {
   const de = addDays(day, 1);
@@ -1178,7 +1181,7 @@ function balance(name) {
   return d.log.filter(l => l.kid === name).reduce((s, l) => s + (+l.amount || 0), 0) - d.payouts.filter(p => p.kid === name).reduce((s, p) => s + (+p.amount || 0), 0);
 }
 function choresFor(name) { return S.shared.chores.filter(c => !c.kids || !c.kids.length || c.kids.includes(name)); }
-function doneToday(name, choreId) { const t = dkey(new Date()); return S.shared.log.find(l => l.kid === name && l.chore === choreId && l.date === t); }
+function countToday(name, choreId) { const t = dkey(new Date()); return S.shared.log.filter(l => l.kid === name && l.chore === choreId && l.date === t).length; }
 
 function renderKid(i, now) {
   const k = kids()[i]; if (!k) { S.view = 'home'; return renderHome(now); }
@@ -1237,9 +1240,14 @@ function renderKid(i, now) {
   // tjen penger
   const chores = choresFor(k.name);
   const choreHTML = chores.map(c => {
-    const done = !!doneToday(k.name, c.id);
-    return `<div class="chore${done ? ' done' : ''}"><button class="chk${done ? ' on' : ''}" data-act="chore" data-kid="${i}" data-id="${esc(c.id)}" aria-label="${done ? 'Angre' : 'Gjort'}">${done ? checkSvg : ''}</button>
-      <div class="ct">${esc(c.title)}</div><div class="price">${nok(+c.price || 0)}</div></div>`;
+    const n = countToday(k.name, c.id);
+    return `<div class="chore${n ? ' done' : ''}">
+      <div class="ct">${esc(c.title)}</div><div class="price">${nok(+c.price || 0)}</div>
+      <div class="ccount">
+        <button class="ccbtn" data-act="choredec" data-kid="${i}" data-id="${esc(c.id)}" aria-label="Én mindre" ${n ? '' : 'disabled'}>−</button>
+        <span class="ccnum">${n}</span>
+        <button class="ccbtn plus" data-act="choreinc" data-kid="${i}" data-id="${esc(c.id)}" aria-label="Én mer">+</button>
+      </div></div>`;
   }).join('') || '<div class="empty">Ingen oppgaver ennå. Legg dem til i innstillingene.</div>';
   const hist = S.shared.log.filter(l => l.kid === k.name).sort((a, b) => b.ts - a.ts).slice(0, 5)
     .map(l => `${esc(parseDate(l.date).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' }))}: ${esc(l.title)} +${nok(l.amount)}`).join('<br>');
@@ -1250,7 +1258,7 @@ function renderKid(i, now) {
   return `<div class="khead">${avatar(k, i)}<h1>${esc(k.name)}</h1><div class="saldo"><div class="small">Tjent</div><div class="amt">${nok(balance(k.name))}</div></div></div>
     <div class="grid2">
       <section class="card">${schoolHTML}</section>
-      <section class="card"><div class="ctitle">Tjen penger<span class="muted">Kryss av når du er ferdig</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
+      <section class="card"><div class="ctitle">Tjen penger<span class="muted">Trykk + for hver gang du gjør den</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
     </div>
     ${myTasks.length || gymNear.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${gymNear.map(g => gymReminderRow('Husk tøy til ' + g.title, dayLabel(g.day))).join('')}${myTasks.map(taskRow).join('')}</section>` : ''}
     ${weekHTML}
@@ -1495,15 +1503,15 @@ $('view').addEventListener('click', async e => {
     S.selDay = n === 0 ? sod(new Date()) : addDays(monday(new Date()), n * 7);
     return render();
   }
-  if (a === 'chore') {
+  if (a === 'choreinc' || a === 'choredec') {
     const k = kids()[+t.dataset.kid], c = S.shared.chores.find(x => x.id === t.dataset.id); if (!k || !c) return;
     const today = dkey(new Date());
-    const ex = doneToday(k.name, c.id);
-    if (!ex) toast(`Bra jobba, ${k.name}! +${nok(+c.price || 0)}`);
+    if (a === 'choreinc') toast(`Bra jobba, ${k.name}! +${nok(+c.price || 0)}`);
     await Store.mutate(d => {
-      const i = d.log.findIndex(l => l.kid === k.name && l.chore === c.id && l.date === today);
-      if (i >= 0) d.log.splice(i, 1);
-      else d.log.push({ id: uid(), kid: k.name, chore: c.id, title: c.title, amount: +c.price || 0, date: today, ts: Date.now() });
+      if (a === 'choreinc') { d.log.push({ id: uid(), kid: k.name, chore: c.id, title: c.title, amount: +c.price || 0, date: today, ts: Date.now() }); return; }
+      const idxs = d.log.map((l, idx) => ({ l, idx })).filter(x => x.l.kid === k.name && x.l.chore === c.id && x.l.date === today);
+      const last = idxs[idxs.length - 1];
+      if (last) d.log.splice(last.idx, 1);
     });
   }
   if (a === 'pantryused') { return Store.mutate(d => { if (!d.pantry.used.includes(t.dataset.id)) d.pantry.used.push(t.dataset.id); }); }
