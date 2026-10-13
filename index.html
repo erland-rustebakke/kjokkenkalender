@@ -736,18 +736,56 @@ function parseSchoolDate(text, now) {
   }
   return null;
 }
+const SCHOOL_KEY_RE = /\b(husk|ta med|minn|viktig|glem ikke|ikke glem|trenger|må ha|må huske|sjekk)\b/i;
+function splitSchoolChunks(raw) {
+  let ps = raw.split(/\n\s*\n+/).map(s => s.trim()).filter(Boolean);
+  if (ps.length <= 1) ps = raw.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  if (ps.length <= 1) ps = raw.split(/(?<=[^0-9][.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  return ps;
+}
+function condenseSchoolText(p) {
+  const sentences = p.split(/(?<=[^0-9][.!?])\s+/).filter(Boolean);
+  let pick = sentences.find(s => SCHOOL_KEY_RE.test(s)) || sentences[0] || p;
+  pick = pick.replace(/^(hei|hallo|hei på deg)[^,.:!]*[,.:!]\s*/i, '').trim();
+  pick = pick.replace(/^(jeg|vi)\s+(anbefaler|ber|minner|ønsker|håper)\s+(dere|deg|ungene|alle)?\s*(om\s*)?(å\s*)?/i, '').trim();
+  if (pick) pick = pick[0].toUpperCase() + pick.slice(1);
+  if (pick.length > 110) pick = pick.slice(0, 107).trim() + '…';
+  return pick;
+}
+function extractSchoolItems(raw) {
+  const chunks = splitSchoolChunks(raw);
+  const items = []; const seen = new Set();
+  for (const p of chunks) {
+    let label = null;
+    const hasClothes = /klær|antrekk|regntøy|\bkle\w*\b/i.test(p);
+    const hasWeather = /kaldere|regn\w*|snø\w*|vind\w*/i.test(p);
+    if (hasClothes && hasWeather) {
+      const w = (p.match(/kaldere|regn\w*|snø\w*|vind\w*/i) || [''])[0].toLowerCase();
+      const phrase = w.startsWith('kaldere') ? 'kaldere dager' : w.startsWith('regn') ? 'regnvær' : w.startsWith('snø') ? 'snøvær' : 'vindfullt vær';
+      label = 'Klær tilpasset ' + phrase;
+    }
+    if (!label && /bokbind/i.test(p)) {
+      const bm = p.match(/bok(?:a|en)?\s+([^.,;:\n]+?)\s+trenger\s+bokbind/i);
+      label = bm ? 'Bokbind til ' + bm[1].trim() : 'Bokbind';
+    }
+    if (!label && /ny tid/i.test(p) && /møte/i.test(p)) {
+      label = /foreldremøte/i.test(p) ? 'Sjekk ny tid for foreldremøte' : 'Sjekk ny tid for møtet';
+    }
+    if (!label && SCHOOL_KEY_RE.test(p)) label = condenseSchoolText(p);
+    if (label) { const key = label.toLowerCase(); if (!seen.has(key)) { seen.add(key); items.push({ label, src: p }); } }
+  }
+  return items;
+}
 function parseSchoolMessage(raw, now) {
   const text = raw.trim();
-  const k = kids().find(kd => kd.name && new RegExp('\\b' + kd.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(text));
-  const due = parseSchoolDate(text, now);
-  const body = text.replace(/\s*\n+\s*/g, ' ').trim();
-  const sentences = body.split(/(?<=[^0-9][.!?])\s+/).filter(Boolean);
-  const keyRe = /husk|ta med|minn|viktig|glem ikke|ikke glem|trenger|må ha|må huske/i;
-  let pick = sentences.find(s => keyRe.test(s)) || sentences[0] || body;
-  pick = pick.replace(/^(hei|hallo|hei på deg)[^,.:!]*[,.:!]\s*/i, '').trim();
-  if (pick.length > 160) pick = pick.slice(0, 157).trim() + '…';
-  const title = (k ? k.name + ': ' : '') + pick;
-  return { title, due, kid: k ? k.name : null };
+  let found = extractSchoolItems(text);
+  if (!found.length) found = [{ label: condenseSchoolText(text.replace(/\s*\n+\s*/g, ' ')), src: text }];
+  return found.map(({ label, src }) => {
+    const k = kids().find(kd => kd.name && new RegExp('\\b' + kd.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(src));
+    const due = parseSchoolDate(src, now);
+    const title = (k ? k.name + ': ' : '') + label;
+    return { title, due, kid: k ? k.name : null };
+  });
 }
 async function addReminder(title, due) {
   title = title.trim(); if (!title || !S.taskListId) return;
@@ -1391,9 +1429,11 @@ $('view').addEventListener('submit', e => {
     const v = f3.querySelector('textarea').value.trim();
     document.activeElement.blur();
     if (!v) return;
-    const { title, due } = parseSchoolMessage(v, new Date());
+    const items = parseSchoolMessage(v, new Date());
     S.schoolPasteOpen = false; delete S.errors.schoolmsg;
-    addReminder(title, due).then(() => toast(due ? `La til: «${title}» · ${dayLabel(due)}` : `La til: «${title}»`));
+    Promise.all(items.map(it => addReminder(it.title, it.due))).then(() => {
+      toast(items.length > 1 ? `La til ${items.length} punkter i huskelisten` : `La til: «${items[0].title}»${items[0].due ? ' · ' + dayLabel(items[0].due) : ''}`);
+    });
   }
 });
 $('nav').addEventListener('click', e => {
