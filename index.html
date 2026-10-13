@@ -716,8 +716,8 @@ function parseSchoolDate(text, now) {
   const t = text.toLowerCase();
   if (/\bi ?morgen\b/.test(t)) return addDays(now, 1);
   if (/\bi ?dag\b/.test(t)) return now;
-  const wd = WEEKDAYS_NB.findIndex(w => new RegExp('\\b' + w + '\\b').test(t));
-  if (wd >= 0) return nextWeekday(now, wd, false);
+  // en eksplisitt dato ("15. oktober", "21.oktober") er mer presis enn et løst ukedagsnavn
+  // i samme avsnitt ("Torsdag 15.oktober …"), så den sjekkes først
   const nm = t.match(/\b(\d{1,2})\.?\s*(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)\b/);
   if (nm) {
     const day = +nm[1], mo = NB_MONTHS.indexOf(nm[2]);
@@ -734,20 +734,36 @@ function parseSchoolDate(text, now) {
       return d;
     }
   }
+  const wd = WEEKDAYS_NB.findIndex(w => new RegExp('\\b' + w + '\\b').test(t));
+  if (wd >= 0) return nextWeekday(now, wd, false);
   return null;
 }
+const SCHOOL_DATE_RE = /\b\d{1,2}\.?\s*(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)\b/i;
 const SCHOOL_KEY_RE = /\b(husk|ta med|minn|viktig|glem ikke|ikke glem|trenger|må ha|må huske|sjekk)\b/i;
+// splitter kun der punktum/utrop/spørsmål etterfølges av stor bokstav eller tall - unngår å kutte
+// midt i en dato ("20. oktober") eller et klokkeslett ("kl.17.30"), der neste tegn er småbokstav/tall
+const SENT_SPLIT_RE = /(?<=[.!?])\s+(?=[A-ZÆØÅ0-9])/;
+const splitSentences = p => p.split(SENT_SPLIT_RE).map(s => s.trim()).filter(Boolean);
 function splitSchoolChunks(raw) {
   let ps = raw.split(/\n\s*\n+/).map(s => s.trim()).filter(Boolean);
   if (ps.length <= 1) ps = raw.split(/\n+/).map(s => s.trim()).filter(Boolean);
-  if (ps.length <= 1) ps = raw.split(/(?<=[^0-9][.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  if (ps.length <= 1) ps = splitSentences(raw);
   return ps;
 }
 function condenseSchoolText(p) {
-  const sentences = p.split(/(?<=[^0-9][.!?])\s+/).filter(Boolean);
-  let pick = sentences.find(s => SCHOOL_KEY_RE.test(s)) || sentences[0] || p;
+  const sentences = splitSentences(p);
+  const actionS = sentences.find(s => SCHOOL_KEY_RE.test(s)) || sentences[0] || p;
+  // hvis selve handlingssetningen ("husk å...") ikke nevner hva den gjelder, men en annen setning
+  // i avsnittet har datoen/hendelsen (f.eks. "Foreldremøte blir onsdag 21.oktober."), slå dem sammen
+  const dateS = sentences.find(s => SCHOOL_DATE_RE.test(s));
+  let pick, extra = null;
+  if (dateS && dateS !== actionS) { pick = dateS; extra = actionS; } else pick = actionS;
   pick = pick.replace(/^(hei|hallo|hei på deg)[^,.:!]*[,.:!]\s*/i, '').trim();
   pick = pick.replace(/^(jeg|vi)\s+(anbefaler|ber|minner|ønsker|håper)\s+(dere|deg|ungene|alle)?\s*(om\s*)?(å\s*)?/i, '').trim();
+  if (extra) {
+    let e = extra.replace(/[.!?]+\s*$/, '').trim();
+    if (e) { e = e[0].toLowerCase() + e.slice(1); pick = pick.replace(/[.!?]+\s*$/, '') + ' – ' + e; }
+  }
   if (pick) pick = pick[0].toUpperCase() + pick.slice(1);
   if (pick.length > 110) pick = pick.slice(0, 107).trim() + '…';
   return pick;
@@ -755,7 +771,24 @@ function condenseSchoolText(p) {
 function extractSchoolItems(raw) {
   const chunks = splitSchoolChunks(raw);
   const items = []; const seen = new Set();
+  const add = (label, src) => { if (!label) return; const key = label.toLowerCase(); if (!seen.has(key)) { seen.add(key); items.push({ label, src }); } };
   for (const p of chunks) {
+    // flere grupper/klasser med hver sin ukedag i samme avsnitt ("5A har gym onsdag, og 5B har gym fredag")
+    // -> ett eget punkt per gruppe/dag, så ingen av dagene blir borte
+    const classMatches = [...p.matchAll(/(\S+)\s+har\s+(\S+)\s+(mandag|tirsdag|onsdag|torsdag|fredag|lørdag|søndag)/gi)];
+    if (classMatches.length >= 2) {
+      const sentences = splitSentences(p);
+      const extra = sentences.find(s => SCHOOL_KEY_RE.test(s) && !/\bhar\s+\S+\s+(mandag|tirsdag|onsdag|torsdag|fredag|lørdag|søndag)\b/i.test(s));
+      const extraTxt = extra ? extra.trim().replace(/[.!?]+$/, '').toLowerCase() : '';
+      classMatches.forEach(m => {
+        let label = `${m[1]} ${m[2]} ${m[3].toLowerCase()}`;
+        if (extraTxt) label += ' – ' + extraTxt;
+        label = label[0].toUpperCase() + label.slice(1);
+        if (label.length > 110) label = label.slice(0, 107).trim() + '…';
+        add(label, m[0]);
+      });
+      continue;
+    }
     let label = null;
     const hasClothes = /klær|antrekk|regntøy|\bkle\w*\b/i.test(p);
     const hasWeather = /kaldere|regn\w*|snø\w*|vind\w*/i.test(p);
@@ -772,7 +805,16 @@ function extractSchoolItems(raw) {
       label = /foreldremøte/i.test(p) ? 'Sjekk ny tid for foreldremøte' : 'Sjekk ny tid for møtet';
     }
     if (!label && SCHOOL_KEY_RE.test(p)) label = condenseSchoolText(p);
-    if (label) { const key = label.toLowerCase(); if (!seen.has(key)) { seen.add(key); items.push({ label, src: p }); } }
+    // avsnitt med en konkret dato er verdt å ta med selv uten "husk"/"viktig" og lignende
+    if (!label && SCHOOL_DATE_RE.test(p)) {
+      const sentences = splitSentences(p);
+      let pick = sentences.find(s => SCHOOL_DATE_RE.test(s)) || sentences[0] || p;
+      pick = pick.replace(/^(hei|hallo|hei på deg)[^,.:!]*[,.:!]\s*/i, '').trim();
+      if (pick) pick = pick[0].toUpperCase() + pick.slice(1);
+      if (pick.length > 110) pick = pick.slice(0, 107).trim() + '…';
+      label = pick;
+    }
+    add(label, p);
   }
   return items;
 }
