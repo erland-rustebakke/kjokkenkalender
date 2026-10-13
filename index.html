@@ -351,7 +351,7 @@ const S = {
   calendars: [], events: [], taskLists: [], tasks: [], taskListId: null,
   weather: null, deps: null,
   view: 'home', selDay: null, weekOffset: 0, chip: 'all', adding: false,
-  dinnerTips: null, dinnerLoading: false, matImportOpen: false,
+  dinnerTips: null, dinnerLoading: false, matImportOpen: false, schoolPasteOpen: false,
   errors: {}, lastSync: null
 };
 
@@ -705,6 +705,60 @@ async function completeTask(id) {
 const tasksFor = name => S.tasks.filter(t => t.title.toLowerCase().startsWith(name.toLowerCase() + ':'));
 const tasksDue = d => S.tasks.filter(t => t.due === dkey(d));
 
+// =================== SKOLEMELDING -> HUSKELISTE ===================
+const WEEKDAYS_NB = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
+function nextWeekday(from, targetDow, allowToday) {
+  const d0 = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  for (let i = allowToday ? 0 : 1; i <= 7; i++) { const c = addDays(d0, i); if (c.getDay() === targetDow) return c; }
+  return d0;
+}
+function parseSchoolDate(text, now) {
+  const t = text.toLowerCase();
+  if (/\bi ?morgen\b/.test(t)) return addDays(now, 1);
+  if (/\bi ?dag\b/.test(t)) return now;
+  const wd = WEEKDAYS_NB.findIndex(w => new RegExp('\\b' + w + '\\b').test(t));
+  if (wd >= 0) return nextWeekday(now, wd, false);
+  const nm = t.match(/\b(\d{1,2})\.?\s*(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)\b/);
+  if (nm) {
+    const day = +nm[1], mo = NB_MONTHS.indexOf(nm[2]);
+    let d = new Date(now.getFullYear(), mo, day);
+    if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) d = new Date(now.getFullYear() + 1, mo, day);
+    return d;
+  }
+  const dm = t.match(/\b(\d{1,2})[.\/](\d{1,2})\b/);
+  if (dm) {
+    const day = +dm[1], mo = +dm[2];
+    if (day >= 1 && day <= 31 && mo >= 1 && mo <= 12) {
+      let d = new Date(now.getFullYear(), mo - 1, day);
+      if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) d = new Date(now.getFullYear() + 1, mo - 1, day);
+      return d;
+    }
+  }
+  return null;
+}
+function parseSchoolMessage(raw, now) {
+  const text = raw.trim();
+  const k = kids().find(kd => kd.name && new RegExp('\\b' + kd.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(text));
+  const due = parseSchoolDate(text, now);
+  const body = text.replace(/\s*\n+\s*/g, ' ').trim();
+  const sentences = body.split(/(?<=[^0-9][.!?])\s+/).filter(Boolean);
+  const keyRe = /husk|ta med|minn|viktig|glem ikke|ikke glem|trenger|må ha|må huske/i;
+  let pick = sentences.find(s => keyRe.test(s)) || sentences[0] || body;
+  pick = pick.replace(/^(hei|hallo|hei på deg)[^,.:!]*[,.:!]\s*/i, '').trim();
+  if (pick.length > 160) pick = pick.slice(0, 157).trim() + '…';
+  const title = (k ? k.name + ': ' : '') + pick;
+  return { title, due, kid: k ? k.name : null };
+}
+async function addReminder(title, due) {
+  title = title.trim(); if (!title || !S.taskListId) return;
+  const body = due ? { title, due: dkey(due) + 'T00:00:00.000Z' } : { title };
+  const tmp = { id: 'tmp' + uid(), title, due: due ? dkey(due) : null, pos: '0' };
+  S.tasks.unshift(tmp); render();
+  try { await gapi(TASKS + 'lists/' + S.taskListId + '/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); await loadTasks(); }
+  catch (e) { if (e.message !== 'auth') toast('Klarte ikke å legge til: ' + e.message); S.tasks = S.tasks.filter(t => t !== tmp); }
+  render();
+}
+
 // =================== VÆR (MET Norway) ===================
 const WX = [[/thunder/, '⛈️'], [/snow/, '🌨️'], [/sleet/, '🌨️'], [/heavyrain|rain/, '🌧️'], [/drizzle|showers/, '🌦️'], [/fog/, '🌫️'],
   [/partlycloudy/, '⛅'], [/fair/, '🌤️'], [/clearsky/, '☀️'], [/cloudy/, '☁️']];
@@ -882,11 +936,20 @@ function depsCard() {
 function tasksCard() {
   const list = S.tasks.slice(0, 5);
   const more = S.tasks.length - list.length;
-  return `<section class="card"><div class="ctitle">Huskeliste<button class="linkbtn" data-act="addtoggle" aria-label="Legg til">${S.adding ? 'Lukk' : '+ Legg til'}</button></div>
+  return `<section class="card"><div class="ctitle">Huskeliste<span style="display:flex;gap:10px">
+      <button class="linkbtn" data-act="schooltoggle" aria-label="Lim inn skolemelding">${S.schoolPasteOpen ? 'Lukk' : '📋 Skolemelding'}</button>
+      <button class="linkbtn" data-act="addtoggle" aria-label="Legg til">${S.adding ? 'Lukk' : '+ Legg til'}</button></span></div>
+    ${S.schoolPasteOpen ? schoolPasteForm() : ''}
     ${S.adding ? `<form class="addrow" data-form="task"><input name="t" placeholder="F.eks. Marie: gymtøy @i morgen" autocomplete="off"><button>Legg til</button></form>` : ''}
     ${errBox('tasks')}
     ${list.map(taskRow).join('') || (S.errors.tasks ? '' : '<div class="empty">Ingenting å huske på 🎉</div>')}
     ${more > 0 ? `<div class="small" style="margin-top:6px">+ ${more} til</div>` : ''}</section>`;
+}
+function schoolPasteForm() {
+  return `<form data-form="schoolmsg" style="margin-bottom:10px">
+    <div class="small" style="margin-bottom:6px">Lim inn meldingen fra skolen – vi finner ut hva du må huske og hvilken dag.</div>
+    <textarea name="t" rows="3" placeholder="F.eks: Hei! Husk at Marie må ha med badetøy til torsdag." style="width:100%;border-radius:12px;border:1px solid var(--line);background:var(--bg1);padding:10px;font:inherit;color:inherit;resize:vertical"></textarea>
+    <button class="btn primary" style="margin-top:8px">Legg i huskelisten</button></form>${errBox('schoolmsg')}`;
 }
 function taskRow(t) {
   const due = t.due ? (t.due === dkey(new Date()) ? 'I dag' : t.due === dkey(addDays(new Date(), 1)) ? 'I morgen' : parseDate(t.due).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' })) : '';
@@ -1310,6 +1373,7 @@ $('view').addEventListener('click', async e => {
     return;
   }
   if (a === 'importtoggle') { S.matImportOpen = !S.matImportOpen; return render(); }
+  if (a === 'schooltoggle') { S.schoolPasteOpen = !S.schoolPasteOpen; return render(); }
 });
 $('view').addEventListener('submit', e => {
   const f1 = e.target.closest('[data-form=task]');
@@ -1320,6 +1384,16 @@ $('view').addEventListener('submit', e => {
     const v = f2.querySelector('textarea').value;
     importOdaReceipt(v).then(imp => { toast(`Importerte ${imp.items.length} varer`); delete S.errors.odaimport; render(); })
       .catch(err => { S.errors.odaimport = err.message; render(); });
+  }
+  const f3 = e.target.closest('[data-form=schoolmsg]');
+  if (f3) {
+    e.preventDefault();
+    const v = f3.querySelector('textarea').value.trim();
+    document.activeElement.blur();
+    if (!v) return;
+    const { title, due } = parseSchoolMessage(v, new Date());
+    S.schoolPasteOpen = false; delete S.errors.schoolmsg;
+    addReminder(title, due).then(() => toast(due ? `La til: «${title}» · ${dayLabel(due)}` : `La til: «${title}»`));
   }
 });
 $('nav').addEventListener('click', e => {
