@@ -88,6 +88,8 @@ button{cursor:pointer}
 .husk-colhead{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;padding-bottom:8px;margin-bottom:2px}
 .husk-colhead i{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
 .husk-col .husk-sep:first-of-type{margin-top:0;padding-top:0;border-top:0}
+.husk-inline{padding-top:14px;margin-top:4px;border-top:1px solid var(--line)}
+.husk-inline h2{font-size:15px!important}
 @media (max-width:760px){
   .husk-cols{grid-template-columns:1fr;gap:14px}
   .husk-col{padding:0;border-left:0!important}
@@ -1040,7 +1042,7 @@ function depsCard() {
     ${rows || errBox('deps') || (d ? '<div class="empty">Ingen direktetog de neste timene.</div>' : '<div class="empty">Henter avganger …</div>')}
     <div class="small" style="margin-top:6px">Kun direktetog · Entur</div></section>`;
 }
-function tasksCard() {
+function huskelisteBlock() {
   const now = new Date();
   const todayK = dkey(now), tmrwK = dkey(addDays(now, 1));
   const relevant = S.tasks.filter(t => t.due === todayK || t.due === tmrwK || !t.due);
@@ -1068,14 +1070,14 @@ function tasksCard() {
   if (felles.length) cols.push(colHTML('Felles', [], felles));
 
   const nothing = !gymAll.length && !relevant.length;
-  return `<section class="card"><div class="ctitle">Huskeliste<span style="display:flex;gap:10px">
+  return `<div class="wkhead husk-inline"><h2>Huskeliste</h2><span style="display:flex;gap:10px">
       <button class="linkbtn" data-act="schooltoggle" aria-label="Lim inn skolemelding">${S.schoolPasteOpen ? 'Lukk' : '📋 Skolemelding'}</button>
       <button class="linkbtn" data-act="addtoggle" aria-label="Legg til">${S.adding ? 'Lukk' : '+ Legg til'}</button></span></div>
     ${S.schoolPasteOpen ? schoolPasteForm() : ''}
     ${S.adding ? `<form class="addrow" data-form="task"><input name="t" placeholder="F.eks. Marie: gymtøy @i morgen" autocomplete="off"><button>Legg til</button></form>` : ''}
     ${errBox('tasks')}
     ${nothing && !S.errors.tasks ? '<div class="empty">Ingenting å huske på 🎉</div>' : `<div class="husk-cols">${cols.join('')}</div>`}
-    ${later > 0 ? `<div class="small" style="margin-top:10px">+ ${later} senere</div>` : ''}</section>`;
+    ${later > 0 ? `<div class="small" style="margin-top:10px">+ ${later} senere</div>` : ''}`;
 }
 function schoolKidChips() {
   const chips = [`<button type="button" class="chip${S.schoolKid === 'all' ? ' on' : ''}" data-schoolkid="all">Alle</button>`]
@@ -1131,10 +1133,6 @@ function weekCard(now) {
   }).join('');
   const month = cap(mon.toLocaleDateString('nb-NO', { month: 'long', year: 'numeric' }));
 
-  // husk i dag
-  const due = tasksDue(sel);
-  const remind = due.length ? `<div class="remind"><b>Husk ${sameDay(sel, now) ? 'i dag' : dayLabel(sel).toLowerCase()}:</b>${due.map(t => `<span>${esc(t.title)}</span>`).join('<span class="muted">·</span>')}</div>` : '';
-
   // skole (kort oppsummering)
   const showKids = S.chip === 'all' ? kids().map((k, i) => [k, i]) : S.chip.startsWith('k:') ? [[kids()[+S.chip.slice(2)], +S.chip.slice(2)]].filter(x => x[0]) : [];
   const school = showKids.filter(([k]) => k.school).map(([k, i]) => {
@@ -1152,8 +1150,8 @@ function weekCard(now) {
     <div class="wkhead"><h2>${esc(month)} <span class="muted" style="font-size:14px;font-weight:400">uke ${isoWeek(mon)}</span></h2>
       <div class="wknav"><button data-act="wk-1" aria-label="Forrige uke">‹</button><button data-act="wk0" aria-label="Denne uken" style="font-size:13px;width:auto;padding:0 8px">I dag</button><button data-act="wk1" aria-label="Neste uke">›</button></div></div>
     <div class="week">${strip}</div>
-    ${remind}
-    <div class="dayh">${esc(dayLabel(sel))} · ${esc(sel.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long' }))}</div>
+    ${huskelisteBlock()}
+    <div class="dayh" style="margin-top:14px">${esc(dayLabel(sel))} · ${esc(sel.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long' }))}</div>
     ${school}
     ${list || (school ? '' : '<div class="empty">Ingenting planlagt</div>')}
     ${errBox('cal')}
@@ -1161,7 +1159,6 @@ function weekCard(now) {
 }
 function renderHome(now) {
   return `<div class="grid2">${weatherCard()}${depsCard()}</div>
-    <div style="margin-bottom:14px">${tasksCard()}</div>
     ${chipsHTML()}${weekCard(now)}
     <div style="margin-top:14px">${highlightCard()}</div>`;
 }
