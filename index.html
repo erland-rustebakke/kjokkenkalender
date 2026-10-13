@@ -79,6 +79,8 @@ button{cursor:pointer}
 /* Huskeliste */
 .task{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
 .task:first-of-type{border-top:0}
+.husk-sep{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:12px 0 4px;margin-top:4px;border-top:1px solid var(--line)}
+.husk-sep + .task{border-top:0}
 .chk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--muted);background:transparent;padding:0;margin-top:1px;display:grid;place-items:center}
 .chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
 .chk svg{width:14px;height:14px}
@@ -1016,16 +1018,21 @@ function depsCard() {
     <div class="small" style="margin-top:6px">Kun direktetog · Entur</div></section>`;
 }
 function tasksCard() {
-  const list = S.tasks.slice(0, 5);
-  const more = S.tasks.length - list.length;
+  const todayK = dkey(new Date()), tmrwK = dkey(addDays(new Date(), 1));
+  const todayList = S.tasks.filter(t => t.due === todayK || !t.due);
+  const tmrwList = S.tasks.filter(t => t.due === tmrwK);
+  const later = S.tasks.length - todayList.length - tmrwList.length;
+  const group = (label, list) => list.length ? `<div class="husk-sep">${label}</div>${list.map(taskRow).join('')}` : '';
+  const empty = !todayList.length && !tmrwList.length && !S.errors.tasks;
   return `<section class="card"><div class="ctitle">Huskeliste<span style="display:flex;gap:10px">
       <button class="linkbtn" data-act="schooltoggle" aria-label="Lim inn skolemelding">${S.schoolPasteOpen ? 'Lukk' : '📋 Skolemelding'}</button>
       <button class="linkbtn" data-act="addtoggle" aria-label="Legg til">${S.adding ? 'Lukk' : '+ Legg til'}</button></span></div>
     ${S.schoolPasteOpen ? schoolPasteForm() : ''}
     ${S.adding ? `<form class="addrow" data-form="task"><input name="t" placeholder="F.eks. Marie: gymtøy @i morgen" autocomplete="off"><button>Legg til</button></form>` : ''}
     ${errBox('tasks')}
-    ${list.map(taskRow).join('') || (S.errors.tasks ? '' : '<div class="empty">Ingenting å huske på 🎉</div>')}
-    ${more > 0 ? `<div class="small" style="margin-top:6px">+ ${more} til</div>` : ''}</section>`;
+    ${group('I dag', todayList)}${group('I morgen', tmrwList)}
+    ${empty ? '<div class="empty">Ingenting å huske på 🎉</div>' : ''}
+    ${later > 0 ? `<div class="small" style="margin-top:6px">+ ${later} senere</div>` : ''}</section>`;
 }
 function schoolKidChips() {
   const chips = [`<button type="button" class="chip${S.schoolKid === 'all' ? ' on' : ''}" data-schoolkid="all">Alle</button>`]
