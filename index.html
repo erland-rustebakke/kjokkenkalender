@@ -432,7 +432,13 @@ const Store = {
   async read() {
     if (!this.useDrive()) return normShared(LS.get('kk.shared', null));
     if (!S.driveFileId) S.driveFileId = await this.find();
-    if (!S.driveFileId) return normShared(LS.get('kk.shared', null));
+    if (!S.driveFileId) {
+      // Ingen fil i Drive ennå: bruk det som ligger lokalt, og last det opp hvis det finnes noe
+      const local = normShared(LS.get('kk.shared', null));
+      S.needUpload = local.cfg.kids.length > 0 || local.chores.length > 0 || local.log.length > 0;
+      return local;
+    }
+    S.needUpload = false;
     const txt = await gapi(DRIVE + 'files/' + S.driveFileId + '?alt=media', { text: true });
     try { return normShared(JSON.parse(txt)); } catch (e) { return normShared(null); }
   },
@@ -464,7 +470,10 @@ const Store = {
     render();
   },
   async refresh() {
-    try { S.shared = await this.read(); LS.set('kk.shared', S.shared); delete S.errors.store; }
+    try {
+      S.shared = await this.read(); LS.set('kk.shared', S.shared); delete S.errors.store;
+      if (S.needUpload && this.useDrive()) { await this.write(S.shared); S.needUpload = false; toast('Innstillingene er lastet opp til Google Drive'); }
+    }
     catch (e) { if (e.message !== 'auth') S.errors.store = e.message; }
   }
 };
@@ -925,7 +934,9 @@ function renderSettings() {
   const sch = d.kids.map(k => k.school).filter(Boolean);
   $('sheet').innerHTML = `
     <h2>Innstillinger</h2>
-    <p class="hint">Lagres i Google-kontoen din og gjelder alle enheter som er logget inn med den.</p>
+    ${!Store.useDrive() ? `<div class="msg">Innstillingene lagres bare på denne enheten fordi siden mangler tilgang til Google Drive. <button class="linkbtn" data-sact="regrant">Gi tilgang</button></div>`
+      : S.errors.store ? `<div class="msg">Klarte ikke å lagre i Google Drive: ${esc(S.errors.store)}</div>`
+      : `<p class="hint">✓ Lagres i Google Drive for ${esc(S.user ? S.user.email : 'kontoen din')} og gjelder alle enheter som er logget inn med samme konto.</p>`}
 
     <h3>Barn</h3>
     <p class="hint">Navn, kalenderen med timeplanen og eventuelt en egen aktivitetskalender (f.eks. Spond). Avtaler med navnet i tittelen havner også hos barnet.</p>
@@ -1007,6 +1018,7 @@ $('sheet').addEventListener('click', async e => {
   const a = b.dataset.sact;
   if (a === 'cancel') return closeSettings();
   if (a === 'logout') return logout();
+  if (a === 'regrant') return login(false);
   if (a === 'fs') { const d = document.documentElement; (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d); return; }
   const baseRoute = () => draft.route || { from: { name: DEFAULT_ROUTE.from, id: (LS.get('kk.stop.' + DEFAULT_ROUTE.from, {}) || {}).id }, to: { name: DEFAULT_ROUTE.to, id: (LS.get('kk.stop.' + DEFAULT_ROUTE.to, {}) || {}).id } };
   if (a === 'fromsearch') return searchInto('fromQ', 'fromRes', 'venue', r => { draft.route = Object.assign(baseRoute(), { from: { id: r.id, name: r.name } }); });
