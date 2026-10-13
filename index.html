@@ -1094,7 +1094,6 @@ function renderKid(i, now) {
       <section class="card"><div class="ctitle">Tjen penger<span class="muted">Kryss av når du er ferdig</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
     </div>
     ${myTasks.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${myTasks.map(taskRow).join('')}</section>` : ''}
-    <div style="margin-bottom:14px">${lunchboxCard(k, i)}</div>
     ${weekHTML}
     ${ttHTML}`;
 }
