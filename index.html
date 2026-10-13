@@ -963,6 +963,8 @@ function schoolDay(k, day) {
 }
 const GYM_RE = /gym|kroppsøving/i;
 const gymLessonsOn = sd => sd.timed.filter(e => GYM_RE.test(e.title));
+const gymNearForKid = (k, now) => k.school ? [0, 1].flatMap(n => { const day = addDays(sod(now), n); return gymLessonsOn(schoolDay(k, day)).map(e => ({ day, title: e.title, kid: k.name })); }) : [];
+const gymReminderRow = (text, dueLabel) => `<div class="task"><span class="chk" style="display:grid;place-items:center;opacity:.5" aria-hidden="true">👕</span><div><div class="tt">${esc(text)}</div>${dueLabel ? `<div class="due">${esc(dueLabel)}</div>` : ''}</div></div>`;
 function schoolStatus(k, now) {
   const sd = schoolDay(k, sod(now));
   if (!sd.timed.length) return sd.allDay.length ? esc(sd.allDay.map(e => e.title).join(', ')) : 'Fri fra skolen';
@@ -1018,19 +1020,25 @@ function depsCard() {
     <div class="small" style="margin-top:6px">Kun direktetog · Entur</div></section>`;
 }
 function tasksCard() {
-  const todayK = dkey(new Date()), tmrwK = dkey(addDays(new Date(), 1));
+  const now = new Date();
+  const todayK = dkey(now), tmrwK = dkey(addDays(now, 1));
   const todayList = S.tasks.filter(t => t.due === todayK || !t.due);
   const tmrwList = S.tasks.filter(t => t.due === tmrwK);
   const later = S.tasks.length - todayList.length - tmrwList.length;
-  const group = (label, list) => list.length ? `<div class="husk-sep">${label}</div>${list.map(taskRow).join('')}` : '';
-  const empty = !todayList.length && !tmrwList.length && !S.errors.tasks;
+  const gymAll = kids().flatMap(k => gymNearForKid(k, now));
+  const gymToday = gymAll.filter(g => dkey(g.day) === todayK);
+  const gymTmrw = gymAll.filter(g => dkey(g.day) === tmrwK);
+  const gymHTML = g => gymReminderRow(`${g.kid}: Husk tøy til ${g.title}`);
+  const group = (label, gymList, taskList) => (gymList.length || taskList.length)
+    ? `<div class="husk-sep">${label}</div>${gymList.map(gymHTML).join('')}${taskList.map(taskRow).join('')}` : '';
+  const empty = !todayList.length && !tmrwList.length && !gymAll.length && !S.errors.tasks;
   return `<section class="card"><div class="ctitle">Huskeliste<span style="display:flex;gap:10px">
       <button class="linkbtn" data-act="schooltoggle" aria-label="Lim inn skolemelding">${S.schoolPasteOpen ? 'Lukk' : '📋 Skolemelding'}</button>
       <button class="linkbtn" data-act="addtoggle" aria-label="Legg til">${S.adding ? 'Lukk' : '+ Legg til'}</button></span></div>
     ${S.schoolPasteOpen ? schoolPasteForm() : ''}
     ${S.adding ? `<form class="addrow" data-form="task"><input name="t" placeholder="F.eks. Marie: gymtøy @i morgen" autocomplete="off"><button>Legg til</button></form>` : ''}
     ${errBox('tasks')}
-    ${group('I dag', todayList)}${group('I morgen', tmrwList)}
+    ${group('I dag', gymToday, todayList)}${group('I morgen', gymTmrw, tmrwList)}
     ${empty ? '<div class="empty">Ingenting å huske på 🎉</div>' : ''}
     ${later > 0 ? `<div class="small" style="margin-top:6px">+ ${later} senere</div>` : ''}</section>`;
 }
@@ -1223,15 +1231,14 @@ function renderKid(i, now) {
     .map(l => `${esc(parseDate(l.date).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' }))}: ${esc(l.title)} +${nok(l.amount)}`).join('<br>');
   // huskepunkter
   const myTasks = tasksFor(k.name);
-  const gymNear = k.school ? [0, 1].flatMap(n => { const day = addDays(sod(now), n); return gymLessonsOn(schoolDay(k, day)).map(e => ({ day, title: e.title })); }) : [];
-  const gymRow = g => `<div class="task"><span class="chk" style="display:grid;place-items:center;opacity:.5" aria-hidden="true">👕</span><div><div class="tt">Husk tøy til ${esc(g.title)}</div><div class="due">${esc(dayLabel(g.day))}</div></div></div>`;
+  const gymNear = gymNearForKid(k, now);
 
   return `<div class="khead">${avatar(k, i)}<h1>${esc(k.name)}</h1><div class="saldo"><div class="small">Tjent</div><div class="amt">${nok(balance(k.name))}</div></div></div>
     <div class="grid2">
       <section class="card">${schoolHTML}</section>
       <section class="card"><div class="ctitle">Tjen penger<span class="muted">Kryss av når du er ferdig</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
     </div>
-    ${myTasks.length || gymNear.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${gymNear.map(gymRow).join('')}${myTasks.map(taskRow).join('')}</section>` : ''}
+    ${myTasks.length || gymNear.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${gymNear.map(g => gymReminderRow('Husk tøy til ' + g.title, dayLabel(g.day))).join('')}${myTasks.map(taskRow).join('')}</section>` : ''}
     ${weekHTML}
     ${ttHTML}`;
 }
