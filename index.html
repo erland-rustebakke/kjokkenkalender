@@ -6,125 +6,209 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Kjøkkenkalender</title>
+<title>Uka vår</title>
 <style>
 :root{
-  --bg:#f5f2ec;--card:#ffffff;--text:#1c1a17;--muted:#716b61;--line:#e7e1d6;
-  --accent:#c2410c;--accent-bg:#fff1e6;--today:#fff8f0;--shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+  --bg1:#eef3fb;--bg2:#f7f4ee;--card:rgba(255,255,255,.78);--solid:#ffffff;--text:#16202e;--muted:#64707f;--line:rgba(22,32,46,.09);
+  --accent:#2563eb;--accent-soft:#e6eefc;--ok:#16a34a;--warn:#d97706;--shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
 }
 :root[data-theme=dark]{
-  --bg:#12110e;--card:#1c1a16;--text:#f2eee7;--muted:#9b9489;--line:#2c2924;
-  --accent:#fb923c;--accent-bg:#2a1d12;--today:#221c14;--shadow:none;
+  --bg1:#0d1117;--bg2:#121820;--card:rgba(28,34,44,.82);--solid:#1b212b;--text:#eef2f7;--muted:#97a2b1;--line:rgba(255,255,255,.08);
+  --accent:#60a5fa;--accent-soft:#1c2a40;--ok:#4ade80;--warn:#fbbf24;--shadow:none;
 }
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
-body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  -webkit-font-smoothing:antialiased;transition:background .4s,color .4s}
+body{background:linear-gradient(160deg,var(--bg1),var(--bg2)) fixed;color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
 .hidden{display:none!important}
+.muted{color:var(--muted)}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 20px 110px}
 
-/* ---------- Innlogging ---------- */
+/* Innlogging */
 #login{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
 .login-card{width:100%;max-width:440px;text-align:center}
-.login-card h1{font-size:clamp(32px,6vw,44px);letter-spacing:-.02em;margin:0 0 8px}
+.login-card h1{font-size:clamp(34px,6vw,46px);letter-spacing:-.02em;margin:0 0 8px}
 .login-card .sub{color:var(--muted);margin:0 0 32px;font-size:17px}
 .gbtn{display:inline-flex;align-items:center;gap:12px;padding:14px 22px;border-radius:999px;border:1px solid var(--line);
-  background:var(--card);cursor:pointer;font-weight:600;font-size:17px;box-shadow:var(--shadow)}
-.gbtn:hover{border-color:var(--muted)}
-.setupbox{text-align:left;margin-top:28px;padding:18px;border:1px dashed var(--line);border-radius:16px}
+  background:var(--solid);font-weight:600;font-size:17px;box-shadow:var(--shadow)}
+.setupbox{text-align:left;margin-top:28px;padding:18px;border:1px dashed var(--line);border-radius:16px;background:var(--card)}
 .setupbox p{color:var(--muted);font-size:14px;margin:0 0 10px;line-height:1.5}
-.msg{margin-top:20px;padding:12px 14px;border-radius:12px;font-size:15px;text-align:left;background:#fef3c7;color:#78350f}
+.msg{margin-top:16px;padding:12px 14px;border-radius:12px;font-size:15px;text-align:left;background:#fef3c7;color:#78350f;line-height:1.45}
 
-/* ---------- Header ---------- */
-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:20px 28px 12px}
-.clock{font-size:clamp(48px,8vw,96px);font-weight:600;letter-spacing:-.03em;line-height:.9;font-variant-numeric:tabular-nums}
-.date{font-size:clamp(18px,2.2vw,26px);margin-top:8px}
-.date small{color:var(--muted);font-size:.7em;margin-left:10px}
-.hright{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}
-.iconbtn{background:var(--card);border:1px solid var(--line);border-radius:12px;width:44px;height:44px;cursor:pointer;
-  display:grid;place-items:center;box-shadow:var(--shadow);padding:0;overflow:hidden}
-.iconbtn svg{width:20px;height:20px}
-.iconbtn img{width:100%;height:100%;object-fit:cover}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px}
-.dot.warn{background:#f59e0b}
+/* Topp */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.top h1{margin:0;font-size:26px;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.top .sub{color:var(--muted);font-size:14px;margin-top:2px}
+.top .clock{font-size:34px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.tright{display:flex;align-items:center;gap:8px}
+.iconbtn{background:var(--card);border:1px solid var(--line);border-radius:12px;width:42px;height:42px;display:grid;place-items:center;padding:0;box-shadow:var(--shadow)}
+.iconbtn svg{width:19px;height:19px}
+.syncdot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.syncdot.warn{background:var(--warn)}
 
-/* ---------- Layout ---------- */
-main{padding:8px 28px 28px;display:flex;flex-direction:column;gap:20px}
-.toprow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;align-items:start}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow);min-width:0}
-.ptitle{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;font-weight:600}
-.empty{color:var(--muted);font-size:15px;padding:6px 0}
+/* Kort */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);
+  border-radius:20px;padding:16px 18px;box-shadow:var(--shadow);min-width:0}
+.ctitle{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px;font-weight:600;margin:0 0 10px}
+.ctitle .muted{font-weight:400;font-size:13px}
+.empty{color:var(--muted);font-size:14px;padding:4px 0}
+.small{font-size:12px;color:var(--muted)}
+.linkbtn{background:none;border:0;color:var(--accent);padding:0;font-size:14px;font-weight:600}
 
-/* Skolekort */
-.school{border-top:6px solid var(--kid,#64748b)}
-.school .kid{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
-.school .kid h2{margin:0;font-size:26px;letter-spacing:-.01em}
-.school .kid span{color:var(--muted);font-size:14px;white-space:nowrap}
-.school .status{font-size:18px;margin:6px 0 14px;padding:10px 12px;border-radius:12px;background:var(--accent-bg)}
-.school .status b{color:var(--accent)}
-.lesson{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:7px 0;border-top:1px solid var(--line);align-items:baseline}
-.lesson:first-of-type{border-top:0}
-.lesson .t{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
-.lesson .n{font-size:17px}
-.lesson .n small{color:var(--muted);font-size:13px;margin-left:6px}
-.lesson.past{opacity:.38}
-.lesson.now{background:var(--accent-bg);margin:0 -10px;padding:7px 10px;border-radius:10px;border-top-color:transparent}
-.lesson.now .t{color:var(--accent);font-weight:600}
-.lesson.now .n{font-weight:600}
-.lesson.extra .n{color:var(--muted);font-style:italic}
+/* Vær */
+.wx-now{display:flex;align-items:center;gap:10px}
+.wx-now .ic{font-size:34px;line-height:1}
+.wx-now .temp{font-size:38px;font-weight:600;letter-spacing:-.02em}
+.wx-place{font-size:14px;margin:2px 0 10px}
+.wx-hours{display:flex;gap:18px;margin-bottom:8px}
+.wx-hours div{text-align:center;font-size:13px}
+.wx-hours .ic{font-size:20px;display:block;margin:2px 0}
 
-/* Aktiviteter */
-.today{background:var(--today)}
-.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
-.day h3{margin:0 0 10px;font-size:18px;display:flex;justify-content:space-between;align-items:baseline}
-.day h3 em{font-style:normal}
-.day h3 span{color:var(--muted);font-size:13px;font-weight:500}
-.ev{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
-.ev:first-of-type{border-top:0}
-.bar{width:4px;border-radius:4px;flex:none}
-.ev .t{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-.ev .n{font-size:16px;line-height:1.25;overflow-wrap:anywhere}
-.ev .l{font-size:12px;color:var(--muted);margin-top:2px}
-.ev.past{opacity:.4}
-.today .ev .n{font-size:20px;font-weight:500}
-.today .ev .t{font-size:15px}
+/* Avganger */
+.dep{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.dep:first-of-type{border-top:0}
+.line{min-width:34px;text-align:center;padding:3px 7px;border-radius:7px;color:#fff;font-weight:700;font-size:13px}
+.dep .dst{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dep .when{font-variant-numeric:tabular-nums;font-weight:600;font-size:15px;white-space:nowrap}
+.dep .when.rt::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:middle}
+
+/* Huskeliste */
+.task{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.task:first-of-type{border-top:0}
+.chk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--muted);background:transparent;padding:0;margin-top:1px;display:grid;place-items:center}
+.chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.chk svg{width:14px;height:14px}
+.task .tt{font-size:15px;line-height:1.3}
+.task .due{font-size:12px;color:var(--warn);margin-top:2px}
+.addrow{display:flex;gap:8px;margin-top:8px}
+.addrow input{flex:1;min-width:0;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--solid)}
+.addrow button{padding:9px 13px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:600}
+
+/* Neste hendelse */
+.hl-title{font-size:22px;font-weight:700;letter-spacing:-.01em;margin:2px 0 4px}
+.hl-count{display:inline-block;margin-top:10px;padding:5px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:14px}
+
+/* Chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:14px;white-space:nowrap}
+.chip.on{background:var(--text);color:var(--solid);border-color:var(--text)}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* Uke */
+.wkhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.wkhead h2{margin:0;font-size:20px}
+.wknav{display:flex;gap:4px}
+.wknav button{border:0;background:transparent;width:34px;height:34px;border-radius:10px;color:var(--muted);font-size:18px}
+.wknav button:hover{background:var(--accent-soft)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px}
+.wd{border:0;background:transparent;border-radius:16px;padding:10px 0 8px;text-align:center}
+.wd .dn{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.wd .dd{font-size:22px;font-weight:600;margin:3px 0 4px}
+.wd .dots{display:flex;gap:3px;justify-content:center;height:6px}
+.wd .dots i{width:5px;height:5px;border-radius:50%}
+.wd.today .dd{color:var(--accent)}
+.wd.sel{background:var(--accent);box-shadow:0 6px 16px rgba(37,99,235,.3)}
+.wd.sel .dn,.wd.sel .dd{color:#fff}
+.wd.sel .dots i{background:#fff!important}
+.remind{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:10px 12px;border-radius:12px;background:var(--accent-soft);margin-bottom:12px;font-size:14px}
+.remind b{color:var(--accent);margin-right:2px}
+.dayh{font-size:14px;color:var(--muted);margin:6px 0 6px;font-weight:600}
+.schoolrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.schoolrow .av{width:30px;height:30px;font-size:13px}
+.schoolrow .s1{font-size:15px}
+.schoolrow .s2{font-size:13px;color:var(--muted)}
+.ev{display:grid;grid-template-columns:56px 4px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.ev .t{font-size:14px;font-variant-numeric:tabular-nums;line-height:1.25}
+.ev .t small{display:block;color:var(--muted);font-size:12px}
+.ev .bar{border-radius:4px}
+.ev .n{font-size:16px;line-height:1.25}
+.ev .l{font-size:13px;color:var(--muted);margin-top:2px}
+.ev.past{opacity:.42}
 .ev.now .t{color:var(--accent);font-weight:600}
-.allday{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.pill{font-size:13px;padding:4px 10px;border-radius:999px;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{display:inline-block;font-size:13px;padding:4px 10px;border-radius:999px;color:#fff;margin:0 6px 6px 0}
 
-/* ---------- Innstillinger ---------- */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:grid;place-items:center;padding:16px;z-index:10}
-.sheet{background:var(--card);color:var(--text);border-radius:20px;max-width:600px;width:100%;max-height:90vh;overflow:auto;padding:24px;border:1px solid var(--line)}
+/* Bunnmeny */
+.nav{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:999px;
+  background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);box-shadow:0 10px 30px rgba(16,24,40,.12);z-index:4}
+.nav button{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:7px 14px 7px 7px;border-radius:999px;font-size:15px;font-weight:500}
+.nav button.on{background:var(--accent-soft)}
+.nav .home{padding:7px 14px}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px;flex:none}
+.nav .bal{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* Barneside */
+.khead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.khead .av{width:56px;height:56px;font-size:24px}
+.khead h1{margin:0;font-size:30px;letter-spacing:-.02em}
+.saldo{margin-left:auto;text-align:right}
+.saldo .amt{font-size:30px;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums}
+.status{font-size:17px;padding:10px 12px;border-radius:12px;background:var(--accent-soft);margin:4px 0 10px}
+.status b{color:var(--accent)}
+.lesson{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:7px 0;border-top:1px solid var(--line);align-items:baseline}
+.lesson .t{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.lesson .n{font-size:16px}
+.lesson .n small{color:var(--muted);font-size:13px;margin-left:6px}
+.lesson.past{opacity:.4}
+.lesson.now{background:var(--accent-soft);margin:0 -10px;padding:7px 10px;border-radius:10px}
+.lesson.now .t{color:var(--accent);font-weight:600}
+.lesson.extra .n{color:var(--muted);font-style:italic}
+.tt-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.tt-col h4{margin:0 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tt-col.today h4{color:var(--accent)}
+.tt-l{background:var(--solid);border:1px solid var(--line);border-left:4px solid var(--kc);border-radius:8px;padding:5px 7px;margin-bottom:5px}
+.tt-l .a{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tt-l .b{font-size:13px;line-height:1.2;overflow-wrap:anywhere}
+.chore{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.chore:first-of-type{border-top:0}
+.chore .chk{width:28px;height:28px;border-radius:8px}
+.chore .price{font-weight:700;font-variant-numeric:tabular-nums;color:var(--ok)}
+.chore.done .ct{text-decoration:line-through;color:var(--muted)}
+.hist{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.6}
+
+/* Innstillinger */
+.overlay{position:fixed;inset:0;background:rgba(10,15,25,.45);display:grid;place-items:center;padding:16px;z-index:10}
+.sheet{background:var(--solid);color:var(--text);border-radius:20px;max-width:640px;width:100%;max-height:92vh;overflow:auto;padding:22px;border:1px solid var(--line)}
 .sheet h2{margin:0 0 4px;font-size:22px}
-.sheet h3{margin:22px 0 4px;font-size:16px}
-.sheet .hint{color:var(--muted);font-size:14px;margin:0 0 10px;line-height:1.45}
-label.f{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;font-weight:600}
-input[type=text],select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
-code{background:var(--bg);border:1px solid var(--line);padding:2px 6px;border-radius:6px;font-size:13px;word-break:break-all}
-.kidrow{display:grid;grid-template-columns:1fr 1.4fr 44px;gap:8px;margin-bottom:8px}
-.kidrow button{border:1px solid var(--line);background:var(--bg);border-radius:10px;cursor:pointer}
-.btn{display:inline-flex;align-items:center;gap:10px;padding:11px 16px;border-radius:12px;border:1px solid var(--line);
-  background:var(--bg);cursor:pointer;font-weight:600}
-.btn.primary{background:var(--text);color:var(--bg);border-color:var(--text)}
-.btn.small{padding:8px 12px;font-size:14px}
-.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
-.cal{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
-.cal input{width:20px;height:20px;flex:none}
-.cal.dis{opacity:.45;cursor:default}
-.sw{width:14px;height:14px;border-radius:4px;flex:none}
-.who{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.sheet h3{margin:24px 0 4px;font-size:16px}
+.hint{color:var(--muted);font-size:13.5px;margin:0 0 10px;line-height:1.45}
+.sheet input[type=text],.sheet input[type=number],.sheet select{width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg1)}
+.frow{display:grid;gap:8px;margin-bottom:8px;align-items:center}
+.frow.kid{grid-template-columns:1fr 1fr 1fr 40px}
+.frow.chorer{grid-template-columns:1.6fr 90px 1fr 40px}
+.frow button.x{height:40px;border:1px solid var(--line);background:var(--bg1);border-radius:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border-radius:12px;border:1px solid var(--line);background:var(--bg1);font-weight:600}
+.btn.primary{background:var(--text);color:var(--solid);border-color:var(--text)}
+.btn.small{padding:7px 11px;font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.cal{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.cal input{width:19px;height:19px;flex:none}
+.cal.dis{opacity:.45}
+.sw{width:13px;height:13px;border-radius:4px;flex:none}
+.results{border:1px solid var(--line);border-radius:10px;margin-top:6px;overflow:hidden}
+.results button{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:var(--solid);padding:9px 11px;font-size:14px}
+.results button:first-child{border-top:0}
+.cur{font-size:14px;margin:6px 0 0}
+.payrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.who{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
 
-.banner{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--text);color:var(--bg);
-  padding:12px 16px;border-radius:12px;display:flex;gap:12px;align-items:center;z-index:5;font-size:15px}
-.banner button{background:var(--bg);color:var(--text);border:0;border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--text);color:var(--solid);padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;max-width:90vw}
+.banner{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--text);color:var(--solid);padding:10px 14px;border-radius:12px;display:flex;gap:12px;align-items:center;z-index:9;font-size:15px}
+.banner button{background:var(--solid);color:var(--text);border:0;border-radius:8px;padding:7px 11px;font-weight:600}
 
-@media (max-width:820px){
-  header{padding:16px 16px 8px}
-  main{padding:8px 16px 16px}
-  .days{grid-template-columns:1fr}
-  #sync{display:none}
-  .kidrow{grid-template-columns:1fr 44px}
-  .kidrow select{grid-column:1/2;grid-row:2}
+@media (max-width:760px){
+  .wrap{padding:12px 14px 104px}
+  .grid2{grid-template-columns:1fr}
+  .top .clock{font-size:28px}
+  .tt-grid{grid-template-columns:1fr}
+  .frow.kid,.frow.chorer{grid-template-columns:1fr 1fr}
+  .frow button.x{grid-column:2}
+  .nav button{padding:6px}
+  .nav button span.nm,.nav .bal{display:none}
+  .nav .home{padding:6px 12px}
 }
 </style>
 </head>
@@ -133,7 +217,7 @@ code{background:var(--bg);border:1px solid var(--line);padding:2px 6px;border-ra
 <!-- ================= INNLOGGING ================= -->
 <section id="login" class="hidden">
   <div class="login-card">
-    <h1>Kjøkkenkalender</h1>
+    <h1>Uka vår</h1>
     <p class="sub">Logg inn for å se dagens plan.</p>
     <button class="gbtn" id="loginBtn">
       <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
@@ -142,161 +226,127 @@ code{background:var(--bg);border:1px solid var(--line);padding:2px 6px;border-ra
     <div class="setupbox hidden" id="setupBox">
       <p><b>Førstegangsoppsett.</b> Lim inn Client ID fra Google Cloud. Registrer disse adressene på klienten:</p>
       <p>JavaScript origin: <code id="originTxt"></code><br>Redirect URI: <code id="redirectTxt"></code></p>
-      <input type="text" id="clientId" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off">
+      <div class="addrow"><input type="text" id="clientId" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off"></div>
     </div>
     <div class="msg hidden" id="loginMsg"></div>
   </div>
 </section>
 
-<!-- ================= TAVLE ================= -->
+<!-- ================= APP ================= -->
 <div id="app" class="hidden">
-  <header>
-    <div>
-      <div class="clock" id="clock">--:--</div>
-      <div class="date" id="date"></div>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1 id="ttl">Uka vår</h1>
+        <div class="sub" id="dateTxt"></div>
+      </div>
+      <div class="tright">
+        <span class="clock" id="clock">--:--</span>
+        <span class="syncdot" id="syncDot" title=""></span>
+        <button class="iconbtn" id="refreshBtn" title="Oppdater" aria-label="Oppdater"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></button>
+        <button class="iconbtn" id="settingsBtn" title="Innstillinger" aria-label="Innstillinger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></button>
+      </div>
     </div>
-    <div class="hright">
-      <span id="sync"></span>
-      <button class="iconbtn" id="refreshBtn" title="Oppdater" aria-label="Oppdater">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
-      </button>
-      <button class="iconbtn" id="settingsBtn" title="Innstillinger" aria-label="Innstillinger">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
-      </button>
-    </div>
-  </header>
-
-  <main>
-    <div class="toprow" id="toprow">
-      <!-- skolekort settes inn her -->
-      <section class="panel today" id="todayPanel">
-        <h2 class="ptitle">Aktiviteter i dag</h2>
-        <div id="todayList"></div>
-      </section>
-    </div>
-    <section>
-      <h2 class="ptitle" style="margin-left:4px">Kommende dager</h2>
-      <div class="days" id="days"></div>
-    </section>
-  </main>
-</div>
-
-<!-- ================= INNSTILLINGER ================= -->
-<div class="overlay hidden" id="settings">
-  <div class="sheet">
-    <h2>Innstillinger</h2>
-
-    <h3>Skoledag</h3>
-    <p class="hint">Velg hvilken Google-kalender som har timeplanen til hvert barn.</p>
-    <div id="kidList"></div>
-    <button class="btn small" id="addKid">+ Legg til barn</button>
-
-    <h3>Aktiviteter</h3>
-    <p class="hint">Kalendere som vises under aktiviteter. Skolekalendere holdes utenfor.</p>
-    <div id="calList"></div>
-
-    <label class="f" for="daysSel">Antall dager fremover</label>
-    <select id="daysSel"><option value="5">5 dager</option><option value="7">7 dager</option><option value="10">10 dager</option><option value="14">14 dager</option></select>
-    <label class="f" for="themeSel">Tema</label>
-    <select id="themeSel"><option value="auto">Automatisk (mørkt kl. 21–06)</option><option value="light">Lyst</option><option value="dark">Mørkt</option></select>
-
-    <div class="row">
-      <button class="btn primary" id="saveBtn">Lagre</button>
-      <button class="btn" id="cancelBtn">Avbryt</button>
-      <button class="btn" id="fsBtn">Fullskjerm</button>
-    </div>
-    <div class="who"><span id="whoTxt"></span><span style="flex:1"></span><button class="btn small" id="logoutBtn">Logg ut</button></div>
+    <div id="view"></div>
   </div>
+  <nav class="nav" id="nav"></nav>
 </div>
 
-<div class="banner hidden" id="banner"><span>Innloggingen har utløpt.</span><button id="bannerBtn">Logg inn</button></div>
+<div class="overlay hidden" id="settings"><div class="sheet" id="sheet"></div></div>
+<div class="banner hidden" id="banner"><span id="bannerTxt">Innloggingen har utløpt.</span><button id="bannerBtn">Logg inn</button></div>
+<div class="toast hidden" id="toast"></div>
 
 <script>
 (() => {
 'use strict';
 
-// ====================================================================
+// =====================================================================
 //  KONFIGURASJON
-//  CLIENT_ID: lim inn Client ID fra Google Cloud her, så slipper alle
-//  enheter å skrive den inn. (Den er ikke hemmelig.)
-//  ALLOWED_EMAILS: tom liste = alle som Google slipper inn (testbrukerne).
-// ====================================================================
-const CONFIG = {
-  CLIENT_ID: '',
-  ALLOWED_EMAILS: []
+//  CLIENT_ID: Client ID fra Google Cloud (ikke hemmelig). Tom = skrives inn ved første innlogging.
+//  ALLOWED_EMAILS: tom liste = alle testbrukere Google slipper inn.
+// =====================================================================
+const CONFIG = { CLIENT_ID: '', ALLOWED_EMAILS: [] };
+
+const SC = {
+  cal: 'https://www.googleapis.com/auth/calendar.readonly',
+  tasks: 'https://www.googleapis.com/auth/tasks',
+  drive: 'https://www.googleapis.com/auth/drive.appdata'
 };
+const SCOPE = ['openid', 'email', 'profile', SC.cal, SC.tasks, SC.drive].join(' ');
+const CAL = 'https://www.googleapis.com/calendar/v3/';
+const TASKS = 'https://tasks.googleapis.com/tasks/v1/';
+const DRIVE = 'https://www.googleapis.com/drive/v3/';
+const DRIVE_UP = 'https://www.googleapis.com/upload/drive/v3/';
+const DATA_FILE = 'kjokkenkalender.json';
+const ENTUR_CLIENT = 'unveil-kjokkenkalender';
+const EXTRA_RE = /leksehjelp|sfo|aks/i;
+const BIG_RE = /⭐|★|\[viktig\]/i;
+const KID_COLORS = ['#8b5cf6', '#f97316', '#0ea5e9', '#ec4899', '#14b8a6'];
 
-const SCOPE = 'openid email profile https://www.googleapis.com/auth/calendar.readonly';
-const API = 'https://www.googleapis.com/calendar/v3/';
-const REFRESH_MS = 5 * 60 * 1000;
-const EXTRA_RE = /leksehjelp|sfo|aks/i;   // teller ikke med i "ferdig kl."
-
-// ---------- Lagring ----------
+// ---------- Lagring lokalt ----------
 const LS = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   del(k) { try { localStorage.removeItem(k); } catch (e) {} }
 };
 
+const DEFAULT_SHARED = () => ({
+  v: 2,
+  cfg: { kids: [], activityCals: null, stop: null, place: { name: 'Lillestrøm', lat: 59.956, lon: 11.050 }, taskList: '' },
+  chores: [], log: [], payouts: []
+});
+
 const S = {
   clientId: CONFIG.CLIENT_ID || LS.get('kk.clientId', ''),
   token: LS.get('kk.token', null),
   user: LS.get('kk.user', null),
-  kids: LS.get('kk.kids', null),          // [{name, cal}]
-  selected: LS.get('kk.selected', null),  // aktivitetskalendere
-  days: LS.get('kk.days', 7),
   theme: LS.get('kk.theme', 'auto'),
-  calendars: [],
-  events: [],
-  lastSync: null,
-  syncError: false,
-  lastError: ''
+  shared: LS.get('kk.shared', null) || DEFAULT_SHARED(),
+  driveFileId: null,
+  calendars: [], events: [], taskLists: [], tasks: [], taskListId: null,
+  weather: null, deps: null,
+  view: 'home', selDay: null, weekOffset: 0, chip: 'all', adding: false,
+  errors: {}, lastSync: null
 };
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const nok = n => (Math.round(n * 100) / 100).toLocaleString('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' kr';
+const hasScope = s => !S.token || !S.token.scope || S.token.scope.includes(s);
 
 // ---------- Dato ----------
 const sod = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const fmtT = d => d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
-const parseDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const dkey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const parseDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const weekday = d => cap(d.toLocaleDateString('nb-NO', { weekday: 'long' }));
-const SCHOOL_RE = /^(skole|timeplan)\b/i;
+const sameDay = (a, b) => sod(a).getTime() === sod(b).getTime();
+const monday = d => addDays(sod(d), -((d.getDay() + 6) % 7));
 function isoWeek(d) {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day = t.getUTCDay() || 7;
-  t.setUTCDate(t.getUTCDate() + 4 - day);
-  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
-  return Math.ceil(((t - y0) / 864e5 + 1) / 7);
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  return Math.ceil(((t - new Date(Date.UTC(t.getUTCFullYear(), 0, 1))) / 864e5 + 1) / 7);
 }
 function dayLabel(d) {
   const diff = Math.round((sod(d) - sod(new Date())) / 864e5);
-  if (diff === 0) return 'I dag';
-  if (diff === 1) return 'I morgen';
-  return weekday(d);
+  return diff === 0 ? 'I dag' : diff === 1 ? 'I morgen' : weekday(d);
 }
 
-// ==================== GOOGLE-INNLOGGING ====================
+// =================== GOOGLE-INNLOGGING ===================
 const redirectUri = () => location.origin + location.pathname;
 
 function login(silent) {
   if (!S.clientId) { showLogin(); return; }
-  const st = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  LS.set('kk.state', st);
-  LS.set('kk.silent', !!silent);
-  const p = new URLSearchParams({
-    client_id: S.clientId, redirect_uri: redirectUri(), response_type: 'token',
-    scope: SCOPE, include_granted_scopes: 'true', state: st
-  });
-  if (silent) {
-    p.set('prompt', 'none');
-    if (S.user && S.user.email) p.set('login_hint', S.user.email);
-  } else {
-    p.set('prompt', 'select_account');
-  }
-  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p.toString();
+  const st = uid();
+  LS.set('kk.state', st); LS.set('kk.silent', !!silent);
+  const p = new URLSearchParams({ client_id: S.clientId, redirect_uri: redirectUri(), response_type: 'token',
+    scope: SCOPE, include_granted_scopes: 'true', state: st });
+  if (silent) { p.set('prompt', 'none'); if (S.user && S.user.email) p.set('login_hint', S.user.email); }
+  else p.set('prompt', 'consent select_account');
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p;
 }
 
 function handleRedirect() {
@@ -309,8 +359,7 @@ function handleRedirect() {
   LS.del('kk.state');
   if (h.get('access_token')) {
     S.token = { v: h.get('access_token'), exp: Date.now() + (parseInt(h.get('expires_in'), 10) || 3600) * 1000, scope: h.get('scope') || '' };
-    LS.set('kk.token', S.token);
-    LS.del('kk.silentFailed');
+    LS.set('kk.token', S.token); LS.del('kk.silentFailed');
     return null;
   }
   if (wasSilent) { LS.set('kk.silentFailed', Date.now()); return null; }
@@ -319,322 +368,674 @@ function handleRedirect() {
 }
 
 const tokenValid = () => S.token && S.token.exp - Date.now() > 60 * 1000;
-
 let renewTimer = null;
 function scheduleRenew() {
   clearTimeout(renewTimer);
-  if (!S.token) return;
-  const ms = Math.max(5000, S.token.exp - Date.now() - 5 * 60 * 1000);
-  renewTimer = setTimeout(() => login(true), ms);
+  if (S.token) renewTimer = setTimeout(() => login(true), Math.max(5000, S.token.exp - Date.now() - 5 * 60 * 1000));
 }
-
-function clearSession() {
-  S.token = null; S.user = null;
-  LS.del('kk.token'); LS.del('kk.user');
-}
-
+function clearSession() { S.token = null; S.user = null; LS.del('kk.token'); LS.del('kk.user'); }
 function logout() {
-  if (S.token) {
-    try { fetch('https://oauth2.googleapis.com/revoke?token=' + encodeURIComponent(S.token.v), { method: 'POST', mode: 'no-cors' }); } catch (e) {}
-  }
-  clearSession();
-  S.events = []; S.calendars = [];
-  $('settings').classList.add('hidden');
-  showLogin();
+  if (S.token) { try { fetch('https://oauth2.googleapis.com/revoke?token=' + encodeURIComponent(S.token.v), { method: 'POST', mode: 'no-cors' }); } catch (e) {} }
+  clearSession(); closeSettings(); showLogin();
 }
-
 function authLost() {
-  const failedAt = LS.get('kk.silentFailed', 0);
-  if (S.clientId && S.user && Date.now() - failedAt > 30 * 60 * 1000) login(true);
-  else $('banner').classList.remove('hidden');
+  if (S.clientId && S.user && Date.now() - LS.get('kk.silentFailed', 0) > 30 * 60 * 1000) login(true);
+  else { $('bannerTxt').textContent = 'Innloggingen har utløpt.'; $('banner').classList.remove('hidden'); }
 }
 
-async function loadUser() {
-  const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + S.token.v } });
-  if (!r.ok) throw new Error('userinfo ' + r.status);
-  const u = await r.json();
-  S.user = { email: (u.email || '').toLowerCase(), name: u.name || u.email, picture: u.picture || '' };
-  LS.set('kk.user', S.user);
-}
-
-const allowed = () => !CONFIG.ALLOWED_EMAILS.length ||
-  CONFIG.ALLOWED_EMAILS.map(e => e.toLowerCase()).includes(S.user && S.user.email);
-
-// ==================== GOOGLE CALENDAR ====================
-async function api(path, params) {
-  const u = new URL(API + path);
-  if (params) for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
-  const r = await fetch(u, { headers: { Authorization: 'Bearer ' + S.token.v } });
+// =================== API-HJELPERE ===================
+async function gapi(url, opts = {}) {
+  const headers = Object.assign({ Authorization: 'Bearer ' + S.token.v }, opts.headers || {});
+  const r = await fetch(url, Object.assign({}, opts, { headers }));
   if (r.status === 401) { S.token = null; LS.del('kk.token'); authLost(); throw new Error('auth'); }
   if (!r.ok) {
     let msg = 'HTTP ' + r.status;
     try {
-      const j = await r.json();
+      const j = await r.json(); const m = (j.error && j.error.message) || '';
       const reason = j.error && j.error.errors && j.error.errors[0] && j.error.errors[0].reason;
-      if (reason === 'accessNotConfigured' || /has not been used|is disabled/i.test(j.error.message || ''))
-        msg = 'Google Calendar API er ikke aktivert i Google Cloud-prosjektet. Gå til APIs & Services → Library → Google Calendar API → Enable.';
-      else if (r.status === 403 && /insufficient/i.test(JSON.stringify(j)))
-        msg = 'Mangler tilgang til kalenderen. Logg ut, logg inn igjen og huk av for kalendertilgang.';
-      else if (j.error && j.error.message) msg = j.error.message;
+      if (reason === 'accessNotConfigured' || /has not been used|is disabled/i.test(m)) {
+        const api = /tasks/i.test(url) ? 'Google Tasks API' : /drive/i.test(url) ? 'Google Drive API' : 'Google Calendar API';
+        msg = `${api} er ikke aktivert. Gå til Google Cloud → APIs & Services → Library → ${api} → Enable.`;
+      } else if (r.status === 403 && /insufficient/i.test(m + reason)) msg = 'Mangler tilgang. Logg ut og inn igjen, og huk av for alle tilgangene.';
+      else if (m) msg = m;
     } catch (e) {}
     throw new Error(msg);
   }
-  return r.json();
+  if (r.status === 204 || opts.method === 'DELETE') return null;
+  return opts.text ? r.text() : r.json();
 }
+const qs = p => '?' + new URLSearchParams(p).toString();
 
-async function loadCalendars() {
-  const d = await api('users/me/calendarList', { maxResults: '250', showHidden: 'true' });
-  S.calendars = (d.items || []).map(c => ({
-    id: c.id, name: c.summaryOverride || c.summary, color: c.backgroundColor || '#64748b',
-    primary: !!c.primary, visible: !!c.selected
-  })).sort((a, b) => (b.primary - a.primary) || a.name.localeCompare(b.name, 'nb'));
-  if (!S.selected) {
-    S.selected = S.calendars.filter(c => (c.primary || c.visible) && !SCHOOL_RE.test(c.name)).map(c => c.id);
-    LS.set('kk.selected', S.selected);
+// =================== DELT LAGRING (Google Drive appdata) ===================
+function normShared(d) {
+  const base = DEFAULT_SHARED();
+  d = d && typeof d === 'object' ? d : {};
+  d.cfg = Object.assign(base.cfg, d.cfg || {});
+  d.chores = Array.isArray(d.chores) ? d.chores : [];
+  d.log = Array.isArray(d.log) ? d.log : [];
+  d.payouts = Array.isArray(d.payouts) ? d.payouts : [];
+  // migrer fra eldre versjon (lokale innstillinger)
+  if (!d.cfg.kids.length) {
+    const old = LS.get('kk.kids', null);
+    if (old && old.length) d.cfg.kids = old.map(k => ({ name: k.name, school: k.cal || '', own: '' }));
   }
+  if (!d.cfg.activityCals) { const old = LS.get('kk.selected', null); if (old) d.cfg.activityCals = old; }
+  return d;
 }
 
-const schoolIds = () => (S.kids || []).map(k => k.cal).filter(Boolean);
+const Store = {
+  useDrive: () => hasScope(SC.drive),
+  async find() {
+    const r = await gapi(DRIVE + 'files' + qs({ spaces: 'appDataFolder', q: `name='${DATA_FILE}'`, fields: 'files(id,modifiedTime)', pageSize: '10' }));
+    return r.files && r.files[0] ? r.files[0].id : null;
+  },
+  async read() {
+    if (!this.useDrive()) return normShared(LS.get('kk.shared', null));
+    if (!S.driveFileId) S.driveFileId = await this.find();
+    if (!S.driveFileId) return normShared(LS.get('kk.shared', null));
+    const txt = await gapi(DRIVE + 'files/' + S.driveFileId + '?alt=media', { text: true });
+    try { return normShared(JSON.parse(txt)); } catch (e) { return normShared(null); }
+  },
+  async write(data) {
+    LS.set('kk.shared', data);
+    if (!this.useDrive()) return;
+    const body = JSON.stringify(data);
+    if (!S.driveFileId) S.driveFileId = await this.find();
+    if (S.driveFileId) {
+      await gapi(DRIVE_UP + 'files/' + S.driveFileId + '?uploadType=media', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body });
+    } else {
+      const b = 'kk' + uid();
+      const multipart = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
+        JSON.stringify({ name: DATA_FILE, parents: ['appDataFolder'] }) +
+        `\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${b}--`;
+      const r = await gapi(DRIVE_UP + 'files?uploadType=multipart&fields=id', { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + b }, body: multipart });
+      S.driveFileId = r.id;
+    }
+  },
+  // Les siste versjon, bruk endringen, skriv tilbake (enkelt mot samtidige endringer fra flere enheter)
+  async mutate(fn) {
+    fn(S.shared); LS.set('kk.shared', S.shared); render();
+    try {
+      const fresh = await this.read();
+      fn(fresh);
+      await this.write(fresh);
+      S.shared = fresh; delete S.errors.store;
+    } catch (e) { if (e.message !== 'auth') { S.errors.store = e.message; toast('Klarte ikke å lagre: ' + e.message); } }
+    render();
+  },
+  async refresh() {
+    try { S.shared = await this.read(); LS.set('kk.shared', S.shared); delete S.errors.store; }
+    catch (e) { if (e.message !== 'auth') S.errors.store = e.message; }
+  }
+};
+const cfg = () => S.shared.cfg;
+const kids = () => cfg().kids.filter(k => k.name);
 
-function norm(e, cal) {
+// =================== KALENDER ===================
+async function loadCalendars() {
+  const d = await gapi(CAL + 'users/me/calendarList' + qs({ maxResults: '250', showHidden: 'true' }));
+  S.calendars = (d.items || []).map(c => ({ id: c.id, name: c.summaryOverride || c.summary, color: c.backgroundColor || '#64748b',
+    primary: !!c.primary, visible: !!c.selected })).sort((a, b) => (b.primary - a.primary) || a.name.localeCompare(b.name, 'nb'));
+}
+const schoolIds = () => kids().map(k => k.school).filter(Boolean);
+const activityIds = () => {
+  const sel = cfg().activityCals || S.calendars.filter(c => (c.primary || c.visible) && !/^(skole|timeplan)\b/i.test(c.name)).map(c => c.id);
+  const sch = schoolIds();
+  return [...new Set([...sel, ...kids().map(k => k.own).filter(Boolean)])].filter(id => !sch.includes(id));
+};
+
+function norm(e, cal, kind) {
   const allDay = !!e.start.date;
-  return {
-    title: e.summary || '(uten tittel)', desc: (e.description || '').replace(/<[^>]+>/g, ' ').split('\n')[0].trim(),
-    loc: e.location || '', allDay,
+  return { id: e.id, title: e.summary || '(uten tittel)', desc: (e.description || '').replace(/<[^>]+>/g, ' ').split('\n')[0].trim(),
+    loc: e.location || '', allDay, kind,
     start: allDay ? parseDate(e.start.date) : new Date(e.start.dateTime),
     end: allDay ? parseDate(e.end.date) : new Date(e.end.dateTime),
-    color: cal.color, cal: cal.id
-  };
+    color: cal.color, cal: cal.id, calName: cal.name };
 }
 
 async function loadEvents() {
-  const start = sod(new Date());
-  const end = addDays(start, Math.max(S.days, 8));
-  const ids = [...new Set([...(S.selected || []), ...schoolIds()])];
-  const cals = S.calendars.filter(c => ids.includes(c.id));
-  let failed = 0;
-  const lists = await Promise.all(cals.map(c =>
-    api('calendars/' + encodeURIComponent(c.id) + '/events', {
-      timeMin: start.toISOString(), timeMax: end.toISOString(),
-      singleEvents: 'true', orderBy: 'startTime', maxResults: '500'
-    }).then(d => (d.items || []).filter(e => e.status !== 'cancelled' && e.start).map(e => norm(e, c)))
-      .catch(err => { if (err.message === 'auth') throw err; failed++; return []; })
-  ));
-  S.events = lists.flat();
-  S.lastSync = new Date();
-  S.syncError = failed > 0;
+  const start = addDays(monday(new Date()), -7);
+  const jobs = [];
+  const add = (ids, days, kind) => S.calendars.filter(c => ids.includes(c.id)).forEach(c => jobs.push(
+    gapi(CAL + 'calendars/' + encodeURIComponent(c.id) + '/events' + qs({ timeMin: start.toISOString(), timeMax: addDays(sod(new Date()), days).toISOString(),
+      singleEvents: 'true', orderBy: 'startTime', maxResults: '2500' }))
+      .then(d => (d.items || []).filter(e => e.status !== 'cancelled' && e.start).map(e => norm(e, c, kind)))));
+  add(schoolIds(), 21, 'school');
+  add(activityIds(), 120, 'act');
+  const res = await Promise.allSettled(jobs);
+  if (res.some(r => r.status === 'rejected' && r.reason.message === 'auth')) throw new Error('auth');
+  const bad = res.find(r => r.status === 'rejected');
+  S.events = res.filter(r => r.status === 'fulfilled').flatMap(r => r.value);
+  if (bad) throw bad.reason;
 }
 
+// =================== HUSKELISTE (Google Tasks) ===================
+async function loadTasks() {
+  if (!hasScope(SC.tasks)) { S.errors.tasks = 'Huskelisten trenger tilgang til Google Tasks. Logg ut og inn igjen.'; return; }
+  const want = (cfg().taskList || 'Huskeliste').trim();
+  const lists = await gapi(TASKS + 'users/@me/lists' + qs({ maxResults: '100' }));
+  S.taskLists = lists.items || [];
+  let list = S.taskLists.find(l => l.id === cfg().taskList) || S.taskLists.find(l => l.title.toLowerCase() === want.toLowerCase());
+  if (!list) {
+    list = await gapi(TASKS + 'users/@me/lists', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Huskeliste' }) });
+    S.taskLists.push(list);
+  }
+  S.taskListId = list.id;
+  const t = await gapi(TASKS + 'lists/' + list.id + '/tasks' + qs({ showCompleted: 'false', showHidden: 'false', maxResults: '100' }));
+  S.tasks = (t.items || []).filter(x => x.title && x.status !== 'completed').map(x => ({ id: x.id, title: x.title, due: x.due ? x.due.slice(0, 10) : null, pos: x.position }))
+    .sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999') || a.pos.localeCompare(b.pos));
+  delete S.errors.tasks;
+}
+async function addTask(title) {
+  title = title.trim(); if (!title || !S.taskListId) return;
+  const m = title.match(/^(.*?)\s*@(i dag|idag|i morgen|imorgen)$/i);
+  let due = null;
+  if (m) { title = m[1]; due = dkey(/morgen/i.test(m[2]) ? addDays(new Date(), 1) : new Date()) + 'T00:00:00.000Z'; }
+  const tmp = { id: 'tmp' + uid(), title, due: due ? due.slice(0, 10) : null, pos: '0' };
+  S.tasks.unshift(tmp); render();
+  try {
+    await gapi(TASKS + 'lists/' + S.taskListId + '/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(due ? { title, due } : { title }) });
+    await loadTasks();
+  } catch (e) { if (e.message !== 'auth') toast('Klarte ikke å legge til: ' + e.message); S.tasks = S.tasks.filter(t => t !== tmp); }
+  render();
+}
+async function completeTask(id) {
+  const t = S.tasks.find(x => x.id === id); if (!t) return;
+  S.tasks = S.tasks.filter(x => x !== t); render();
+  try { await gapi(TASKS + 'lists/' + S.taskListId + '/tasks/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'completed' }) }); }
+  catch (e) { if (e.message !== 'auth') { toast('Klarte ikke å krysse av: ' + e.message); S.tasks.push(t); render(); } }
+}
+const tasksFor = name => S.tasks.filter(t => t.title.toLowerCase().startsWith(name.toLowerCase() + ':'));
+const tasksDue = d => S.tasks.filter(t => t.due === dkey(d));
+
+// =================== VÆR (MET Norway) ===================
+const WX = [[/thunder/, '⛈️'], [/snow/, '🌨️'], [/sleet/, '🌨️'], [/heavyrain|rain/, '🌧️'], [/drizzle|showers/, '🌦️'], [/fog/, '🌫️'],
+  [/partlycloudy/, '⛅'], [/fair/, '🌤️'], [/clearsky/, '☀️'], [/cloudy/, '☁️']];
+const WXTXT = { clearsky: 'Klarvær', fair: 'Lettskyet', partlycloudy: 'Delvis skyet', cloudy: 'Skyet', fog: 'Tåke', lightrain: 'Lett regn', rain: 'Regn',
+  heavyrain: 'Kraftig regn', lightrainshowers: 'Lette regnbyger', rainshowers: 'Regnbyger', lightsnow: 'Lett snø', snow: 'Snø', sleet: 'Sludd', lightsleet: 'Lett sludd' };
+const wxIcon = s => { if (!s) return '·'; const night = /_night/.test(s); if (night && /clearsky|fair/.test(s)) return '🌙'; const f = WX.find(([r]) => r.test(s)); return f ? f[1] : '☁️'; };
+const wxText = s => s ? (WXTXT[s.replace(/_(day|night|polartwilight)$/, '')] || '') : '';
+async function loadWeather() {
+  const p = cfg().place; if (!p) return;
+  const r = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${p.lat.toFixed(3)}&lon=${p.lon.toFixed(3)}`);
+  if (!r.ok) throw new Error('MET ' + r.status);
+  const j = await r.json(); const ts = j.properties.timeseries;
+  const now = Date.now();
+  const i0 = Math.max(0, ts.findIndex(t => new Date(t.time).getTime() > now - 3600e3));
+  const pick = t => ({ time: new Date(t.time), temp: t.data.instant.details.air_temperature, wind: t.data.instant.details.wind_speed,
+    sym: (t.data.next_1_hours || t.data.next_6_hours || {}).summary && (t.data.next_1_hours || t.data.next_6_hours).summary.symbol_code,
+    rain: ((t.data.next_1_hours || {}).details || {}).precipitation_amount });
+  S.weather = { now: pick(ts[i0]), hours: [2, 4, 6].map(h => ts[i0 + h]).filter(Boolean).map(pick) };
+  delete S.errors.weather;
+}
+
+// =================== AVGANGER (Entur) ===================
+const MODE_COLOR = { bus: '#e60000', tram: '#0b91ef', metro: '#ec700c', rail: '#1e3a8a', water: '#682c88', coach: '#75a300' };
+async function loadDeps() {
+  const st = cfg().stop; if (!st) { S.deps = null; return; }
+  const q = `{stopPlace(id:"${st.id}"){name estimatedCalls(numberOfDepartures:8,timeRange:14400){expectedDepartureTime aimedDepartureTime realtime cancellation
+    destinationDisplay{frontText} serviceJourney{line{publicCode transportMode}}}}}`;
+  const r = await fetch('https://api.entur.io/journey-planner/v3/graphql', { method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'ET-Client-Name': ENTUR_CLIENT }, body: JSON.stringify({ query: q }) });
+  if (!r.ok) throw new Error('Entur ' + r.status);
+  const j = await r.json(); const sp = j.data && j.data.stopPlace;
+  S.deps = sp ? { name: sp.name, calls: sp.estimatedCalls.filter(c => !c.cancellation).map(c => ({ t: new Date(c.expectedDepartureTime), rt: c.realtime,
+    dst: c.destinationDisplay.frontText, line: c.serviceJourney.line.publicCode, mode: c.serviceJourney.line.transportMode })) } : null;
+  delete S.errors.deps;
+}
+async function enturSearch(text, layers) {
+  const r = await fetch('https://api.entur.io/geocoder/v1/autocomplete' + qs({ text, size: '8', lang: 'no', layers }), { headers: { 'ET-Client-Name': ENTUR_CLIENT } });
+  if (!r.ok) return [];
+  const j = await r.json();
+  return (j.features || []).map(f => ({ id: f.properties.id, name: f.properties.name, sub: [f.properties.locality, f.properties.county].filter(Boolean).join(', '),
+    lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] }));
+}
+
+// =================== SYNK ===================
 let syncing = false;
-async function sync(full) {
+async function syncAll(full) {
   if (syncing || !tokenValid()) return;
   syncing = true;
-  try {
-    if (full || !S.calendars.length) await loadCalendars();
-    await loadEvents();
-    S.lastError = '';
-  } catch (e) {
-    if (e.message !== 'auth') { S.syncError = true; S.lastError = e.message; }
-  } finally {
-    syncing = false;
-    render();
-  }
+  await Store.refresh();   // innstillingene må være lest før resten hentes
+  const jobs = [
+    (async () => { if (full || !S.calendars.length) await loadCalendars(); await loadEvents(); delete S.errors.cal; })().catch(e => { if (e.message !== 'auth') S.errors.cal = e.message; }),
+    loadTasks().catch(e => { if (e.message !== 'auth') S.errors.tasks = e.message; }),
+    loadWeather().catch(e => { S.errors.weather = 'Fikk ikke hentet vær (' + e.message + ')'; }),
+    loadDeps().catch(e => { S.errors.deps = 'Fikk ikke hentet avganger (' + e.message + ')'; })
+  ];
+  await Promise.all(jobs);
+  S.lastSync = new Date(); syncing = false;
+  render();
 }
 
-// ==================== VISNING ====================
+// =================== VISNING: felles ===================
+function kidColor(k, i) { const c = S.calendars.find(x => x.id === k.school); return c ? c.color : KID_COLORS[i % KID_COLORS.length]; }
+const avatar = (k, i) => `<span class="av" style="background:${esc(kidColor(k, i))}">${esc(k.name.charAt(0).toUpperCase())}</span>`;
+const checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
 function eventsOn(day, filter) {
   const de = addDays(day, 1);
   return S.events.filter(e => e.start < de && e.end > day && filter(e))
     .sort((a, b) => (b.allDay - a.allDay) || (a.start - b.start) || a.title.localeCompare(b.title, 'nb'));
 }
-
-// ---- Skolekort ----
-function schoolPlan(kid, now) {
-  const today = sod(now);
-  for (let i = 0; i < 8; i++) {
-    const d = addDays(today, i);
-    const evs = eventsOn(d, e => e.cal === kid.cal);
-    const timed = evs.filter(e => !e.allDay);
-    if (!timed.length) continue;
-    if (i === 0 && timed[timed.length - 1].end <= now) continue; // ferdig for i dag
-    return { day: d, evs, timed };
-  }
-  return null;
+function kidMatch(k, e) {
+  if (e.kind === 'school') return e.cal === k.school;
+  return (k.own && e.cal === k.own) || new RegExp('\\b' + k.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(e.title);
+}
+function chipFilter(e) {
+  const c = S.chip;
+  if (c === 'all') return e.kind === 'act';
+  if (c.startsWith('k:')) { const k = kids()[+c.slice(2)]; return k ? e.kind === 'act' && kidMatch(k, e) : false; }
+  if (c.startsWith('c:')) return e.cal === c.slice(2);
+  return true;
 }
 
-function schoolHTML(kid, now) {
-  const cal = S.calendars.find(c => c.id === kid.cal);
-  const color = cal ? cal.color : '#64748b';
-  const plan = schoolPlan(kid, now);
-  let head = `<div class="kid"><h2>${esc(kid.name || 'Uten navn')}</h2>`;
-  if (!plan) {
-    return `<section class="panel school" style="--kid:${esc(color)}">${head}<span></span></div>
-      <div class="empty">${cal ? 'Ingen skoletimer registrert den neste uken.' : 'Velg skolekalender i innstillingene.'}</div></section>`;
-  }
-  const { day, evs, timed } = plan;
-  const isToday = sod(day).getTime() === sod(now).getTime();
+function schoolDay(k, day) {
+  const evs = eventsOn(day, e => e.kind === 'school' && e.cal === k.school);
+  const timed = evs.filter(e => !e.allDay);
+  if (!timed.length) return { evs, timed, allDay: evs };
   const core = timed.filter(e => !EXTRA_RE.test(e.title));
-  const first = (core[0] || timed[0]).start;
-  const last = (core.length ? core : timed).reduce((m, e) => e.end > m ? e.end : m, timed[0].end);
-  head += `<span>${esc(dayLabel(day))} · ${fmtT(first)}–${fmtT(last)}</span></div>`;
+  const base = core.length ? core : timed;
+  return { evs, timed, allDay: evs.filter(e => e.allDay), first: base[0].start, last: base.reduce((m, e) => e.end > m ? e.end : m, base[0].end) };
+}
+function schoolStatus(k, now) {
+  const sd = schoolDay(k, sod(now));
+  if (!sd.timed.length) return sd.allDay.length ? esc(sd.allDay.map(e => e.title).join(', ')) : 'Fri fra skolen';
+  const cur = sd.timed.find(e => e.start <= now && e.end > now);
+  const next = sd.timed.find(e => e.start > now);
+  if (now < sd.first) return `Skolen starter <b>${fmtT(sd.first)}</b>`;
+  if (now >= sd.last) return next ? `Ferdig på skolen · <b>${esc(next.title)}</b> kl. ${fmtT(next.start)}` : `Ferdig på skolen kl. ${fmtT(sd.last)}`;
+  if (cur) return `Nå: <b>${esc(cur.title)}</b> til ${fmtT(cur.end)}`;
+  return next ? `Pause · neste: <b>${esc(next.title)}</b> kl. ${fmtT(next.start)}` : '';
+}
 
-  let status;
-  if (isToday && now < first) status = `Skolen starter <b>${fmtT(first)}</b>`;
-  else if (isToday) {
-    const cur = timed.find(e => e.start <= now && e.end > now);
-    const next = timed.find(e => e.start > now);
-    if (cur) status = `Nå: <b>${esc(cur.title)}</b> til ${fmtT(cur.end)}`;
-    else if (next) status = `Pause · neste: <b>${esc(next.title)}</b> kl. ${fmtT(next.start)}`;
-    else status = `Ferdig for i dag`;
-    if (now >= last && next) status = `Skoleslutt · <b>${esc(next.title)}</b> kl. ${fmtT(next.start)}`;
-  } else status = `${esc(dayLabel(day))}: oppmøte <b>${fmtT(first)}</b>, ferdig <b>${fmtT(last)}</b>`;
+function evRow(e, day, now) {
+  const nd = addDays(day, 1);
+  let a, b = '';
+  if (e.allDay) a = 'Hele<small>dagen</small>';
+  else if (e.start < day) { a = 'til'; b = e.end <= nd ? fmtT(e.end) : ''; }
+  else { a = fmtT(e.start); b = e.end <= nd && e.end > e.start ? fmtT(e.end) : ''; }
+  const past = !e.allDay && e.end <= now, cur = !e.allDay && e.start <= now && e.end > now;
+  return `<div class="ev${past ? ' past' : ''}${cur ? ' now' : ''}"><div class="t">${a}${b ? `<small>${b}</small>` : ''}</div>
+    <div class="bar" style="background:${esc(e.color)}"></div>
+    <div><div class="n">${esc(e.title)}</div><div class="l">${esc([e.calName, e.loc].filter(Boolean).join(' · '))}</div></div></div>`;
+}
 
-  const ad = evs.filter(e => e.allDay);
-  let body = ad.length ? '<div class="allday">' + ad.map(e => `<span class="pill" style="background:${esc(e.color)}">${esc(e.title)}</span>`).join('') + '</div>' : '';
-  body += timed.map(e => {
-    const cls = [isToday && e.end <= now ? 'past' : '', isToday && e.start <= now && e.end > now ? 'now' : '', EXTRA_RE.test(e.title) ? 'extra' : ''].join(' ');
-    return `<div class="lesson ${cls}"><div class="t">${fmtT(e.start)}–${fmtT(e.end)}</div>
-      <div class="n">${esc(e.title)}${e.desc ? `<small>${esc(e.desc)}</small>` : ''}</div></div>`;
+const errBox = k => S.errors[k] ? `<div class="empty">${esc(S.errors[k])}</div>` : '';
+
+// ---------- Kort ----------
+function weatherCard() {
+  const w = S.weather, p = cfg().place;
+  if (!w) return `<section class="card"><div class="ctitle">Vær</div>${errBox('weather') || '<div class="empty">Henter vær …</div>'}</section>`;
+  return `<section class="card">
+    <div class="wx-now"><span class="ic">${wxIcon(w.now.sym)}</span><span class="temp">${Math.round(w.now.temp)}°</span></div>
+    <div class="wx-place">${esc(p.name)} <span class="muted">${esc(wxText(w.now.sym))}</span></div>
+    <div class="wx-hours">${w.hours.map(h => `<div><span class="muted">${fmtT(h.time)}</span><span class="ic">${wxIcon(h.sym)}</span>${Math.round(h.temp)}°</div>`).join('')}</div>
+    <div class="small">Vind ${w.now.wind.toFixed(1)} m/s${w.now.rain != null ? ` · ${w.now.rain} mm neste time` : ''} · MET Norway CC BY 4.0</div>
+  </section>`;
+}
+function depsCard() {
+  const st = cfg().stop;
+  if (!st) return `<section class="card"><div class="ctitle">Avganger</div><div class="empty">Velg holdeplass i innstillingene.</div></section>`;
+  const d = S.deps, now = Date.now();
+  const rows = d ? d.calls.filter(c => c.t.getTime() > now - 30e3).slice(0, 4).map(c => {
+    const min = Math.round((c.t - now) / 60e3);
+    const when = min <= 0 ? 'Nå' : min < 15 ? `${min} min` : fmtT(c.t);
+    return `<div class="dep"><span class="line" style="background:${MODE_COLOR[c.mode] || '#475569'}">${esc(c.line)}</span><span class="dst">${esc(c.dst)}</span><span class="when${c.rt ? ' rt' : ''}">${when}</span></div>`;
+  }).join('') : '';
+  return `<section class="card"><div class="ctitle">${esc(d ? d.name : st.name)}<span class="muted">Entur</span></div>
+    ${rows || errBox('deps') || '<div class="empty">Ingen avganger de neste timene.</div>'}</section>`;
+}
+function tasksCard() {
+  const list = S.tasks.slice(0, 5);
+  const more = S.tasks.length - list.length;
+  return `<section class="card"><div class="ctitle">Huskeliste<button class="linkbtn" data-act="addtoggle" aria-label="Legg til">${S.adding ? 'Lukk' : '+ Legg til'}</button></div>
+    ${S.adding ? `<form class="addrow" data-form="task"><input name="t" placeholder="F.eks. Marie: gymtøy @i morgen" autocomplete="off"><button>Legg til</button></form>` : ''}
+    ${errBox('tasks')}
+    ${list.map(taskRow).join('') || (S.errors.tasks ? '' : '<div class="empty">Ingenting å huske på 🎉</div>')}
+    ${more > 0 ? `<div class="small" style="margin-top:6px">+ ${more} til</div>` : ''}</section>`;
+}
+function taskRow(t) {
+  const due = t.due ? (t.due === dkey(new Date()) ? 'I dag' : t.due === dkey(addDays(new Date(), 1)) ? 'I morgen' : parseDate(t.due).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' })) : '';
+  return `<div class="task"><button class="chk" data-act="task" data-id="${esc(t.id)}" aria-label="Fullfør"></button><div><div class="tt">${esc(t.title)}</div>${due ? `<div class="due">${esc(due)}</div>` : ''}</div></div>`;
+}
+function bigEvent() {
+  const now = new Date();
+  return S.events.filter(e => e.kind === 'act' && e.end > now && (BIG_RE.test(e.title) || (e.allDay && (e.end - e.start) >= 2 * 864e5)))
+    .sort((a, b) => a.start - b.start)[0];
+}
+function highlightCard() {
+  const e = bigEvent();
+  if (!e) return `<section class="card"><div class="ctitle">Neste store hendelse</div><div class="empty">Ingen store hendelser de neste månedene. Legg ⭐ i tittelen på en avtale for å vise den her.</div></section>`;
+  const endShown = e.allDay ? addDays(e.end, -1) : e.end;
+  const fmt = d => d.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long' });
+  const range = sameDay(e.start, endShown) ? fmt(e.start) + (e.allDay ? '' : ' kl. ' + fmtT(e.start)) : `${e.start.getDate()}.–${fmt(endShown)}`;
+  const days = Math.round((sod(e.start) - sod(new Date())) / 864e5);
+  const cnt = days <= 0 ? 'Pågår nå' : days === 1 ? 'I morgen' : `Om ${days} dager`;
+  return `<section class="card"><div class="ctitle">Neste store hendelse</div>
+    <div class="hl-title">${esc(e.title.replace(BIG_RE, '').trim())}</div><div>${esc(range)}</div><div class="small">${esc(e.calName)}</div>
+    <span class="hl-count">${cnt}</span></section>`;
+}
+
+// ---------- Forside ----------
+function chipsHTML() {
+  const ch = [`<button class="chip${S.chip === 'all' ? ' on' : ''}" data-chip="all">Alle</button>`];
+  kids().forEach((k, i) => ch.push(`<button class="chip${S.chip === 'k:' + i ? ' on' : ''}" data-chip="k:${i}"><i style="background:${esc(kidColor(k, i))}"></i>${esc(k.name)}</button>`));
+  S.calendars.filter(c => activityIds().includes(c.id)).forEach(c =>
+    ch.push(`<button class="chip${S.chip === 'c:' + c.id ? ' on' : ''}" data-chip="c:${esc(c.id)}"><i style="background:${esc(c.color)}"></i>${esc(c.name)}</button>`));
+  return `<div class="chips">${ch.join('')}</div>`;
+}
+function weekCard(now) {
+  const sel = S.selDay || sod(now);
+  const mon = addDays(monday(now), S.weekOffset * 7);
+  const days = [...Array(7)].map((_, i) => addDays(mon, i));
+  const strip = days.map(d => {
+    const evs = eventsOn(d, chipFilter).slice(0, 3);
+    return `<button class="wd${sameDay(d, now) ? ' today' : ''}${sameDay(d, sel) ? ' sel' : ''}" data-day="${dkey(d)}">
+      <div class="dn">${esc(d.toLocaleDateString('nb-NO', { weekday: 'short' }).replace('.', ''))}</div><div class="dd">${d.getDate()}</div>
+      <div class="dots">${evs.map(e => `<i style="background:${esc(e.color)}"></i>`).join('')}</div></button>`;
+  }).join('');
+  const month = cap(mon.toLocaleDateString('nb-NO', { month: 'long', year: 'numeric' }));
+
+  // husk i dag
+  const due = tasksDue(sel);
+  const remind = due.length ? `<div class="remind"><b>Husk ${sameDay(sel, now) ? 'i dag' : dayLabel(sel).toLowerCase()}:</b>${due.map(t => `<span>${esc(t.title)}</span>`).join('<span class="muted">·</span>')}</div>` : '';
+
+  // skole (kort oppsummering)
+  const showKids = S.chip === 'all' ? kids().map((k, i) => [k, i]) : S.chip.startsWith('k:') ? [[kids()[+S.chip.slice(2)], +S.chip.slice(2)]].filter(x => x[0]) : [];
+  const school = showKids.filter(([k]) => k.school).map(([k, i]) => {
+    const sd = schoolDay(k, sel);
+    let s2;
+    if (!sd.timed.length) s2 = sd.allDay.length ? esc(sd.allDay.map(e => e.title).join(', ')) : 'Ingen skole';
+    else s2 = sameDay(sel, now) ? schoolStatus(k, now) : `Skole ${fmtT(sd.first)}–${fmtT(sd.last)}`;
+    const s1 = sd.timed.length ? `${esc(k.name)} · skole ${fmtT(sd.first)}–${fmtT(sd.last)}` : esc(k.name);
+    return `<div class="schoolrow" data-kid="${i}" role="button">${avatar(k, i)}<div><div class="s1">${s1}</div><div class="s2">${s2}</div></div></div>`;
   }).join('');
 
-  return `<section class="panel school" style="--kid:${esc(color)}">${head}<div class="status">${status}</div>${body}</section>`;
+  const evs = eventsOn(sel, chipFilter);
+  const list = evs.map(e => evRow(e, sel, now)).join('');
+  return `<section class="card">
+    <div class="wkhead"><h2>${esc(month)} <span class="muted" style="font-size:14px;font-weight:400">uke ${isoWeek(mon)}</span></h2>
+      <div class="wknav"><button data-act="wk-1" aria-label="Forrige uke">‹</button><button data-act="wk0" aria-label="Denne uken" style="font-size:13px;width:auto;padding:0 8px">I dag</button><button data-act="wk1" aria-label="Neste uke">›</button></div></div>
+    <div class="week">${strip}</div>
+    ${remind}
+    <div class="dayh">${esc(dayLabel(sel))} · ${esc(sel.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long' }))}</div>
+    ${school}
+    ${list || (school ? '' : '<div class="empty">Ingenting planlagt</div>')}
+    ${errBox('cal')}
+  </section>`;
+}
+function renderHome(now) {
+  return `<div class="grid2">${weatherCard()}${depsCard()}${tasksCard()}${highlightCard()}</div>${chipsHTML()}${weekCard(now)}`;
 }
 
-// ---- Aktiviteter ----
-function evHTML(e, day, now) {
-  const nextDay = addDays(day, 1);
-  let t;
-  if (e.start < day) t = e.end <= nextDay ? 'til ' + fmtT(e.end) : 'Hele dagen';
-  else t = fmtT(e.start) + (e.end > e.start ? '–' + (e.end <= nextDay ? fmtT(e.end) : '') : '');
-  const past = e.end <= now, cur = e.start <= now && e.end > now;
-  return `<div class="ev${past ? ' past' : ''}${cur ? ' now' : ''}"><div class="bar" style="background:${esc(e.color)}"></div>
-    <div><div class="t">${cur ? 'Nå · ' : ''}${esc(t)}</div><div class="n">${esc(e.title)}</div>${e.loc ? `<div class="l">${esc(e.loc)}</div>` : ''}</div></div>`;
+// ---------- Barneside ----------
+function balance(name) {
+  const d = S.shared;
+  return d.log.filter(l => l.kid === name).reduce((s, l) => s + (+l.amount || 0), 0) - d.payouts.filter(p => p.kid === name).reduce((s, p) => s + (+p.amount || 0), 0);
 }
+function choresFor(name) { return S.shared.chores.filter(c => !c.kids || !c.kids.length || c.kids.includes(name)); }
+function doneToday(name, choreId) { const t = dkey(new Date()); return S.shared.log.find(l => l.kid === name && l.chore === choreId && l.date === t); }
 
-function activitiesHTML(day, now) {
-  const sch = schoolIds();
-  const evs = eventsOn(day, e => (S.selected || []).includes(e.cal) && !sch.includes(e.cal));
-  const ad = evs.filter(e => e.allDay), timed = evs.filter(e => !e.allDay);
-  let h = ad.length ? '<div class="allday">' + ad.map(e => `<span class="pill" style="background:${esc(e.color)}">${esc(e.title)}</span>`).join('') + '</div>' : '';
-  h += timed.map(e => evHTML(e, day, now)).join('');
-  return evs.length ? h : '<div class="empty">Ingenting planlagt</div>';
-}
-
-function render() {
-  const now = new Date(), today = sod(now);
-  // skolekort
-  document.querySelectorAll('#toprow .school').forEach(n => n.remove());
-  const kids = (S.kids || []).filter(k => k.name || k.cal);
-  $('todayPanel').insertAdjacentHTML('beforebegin', kids.map(k => schoolHTML(k, now)).join(''));
-  // aktiviteter
-  $('todayList').innerHTML = activitiesHTML(today, now);
-  let html = '';
-  for (let i = 1; i < S.days; i++) {
-    const d = addDays(today, i);
-    const lbl = i === 1 ? 'I morgen' : weekday(d);
-    html += `<div class="panel day"><h3><em>${esc(lbl)}</em><span>${esc(d.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' }))}</span></h3>${activitiesHTML(d, now)}</div>`;
+function renderKid(i, now) {
+  const k = kids()[i]; if (!k) { S.view = 'home'; return renderHome(now); }
+  const color = kidColor(k, i);
+  // skoledag i dag / neste
+  let schoolHTML = '<div class="empty">Ingen skolekalender valgt.</div>';
+  if (k.school) {
+    let day = sod(now), sd = schoolDay(k, day);
+    for (let n = 0; n < 8 && (!sd.timed.length || (n === 0 && sd.last <= now)); n++) { day = addDays(sod(now), n + 1); sd = schoolDay(k, day); }
+    if (sd.timed.length) {
+      const isToday = sameDay(day, now);
+      const status = isToday ? schoolStatus(k, now) : `${esc(dayLabel(day))}: oppmøte <b>${fmtT(sd.first)}</b>, ferdig <b>${fmtT(sd.last)}</b>`;
+      schoolHTML = `<div class="status">${status}</div>` + sd.allDay.map(e => `<span class="pill" style="background:${esc(e.color)}">${esc(e.title)}</span>`).join('') +
+        sd.timed.map(e => `<div class="lesson ${isToday && e.end <= now ? 'past' : ''} ${isToday && e.start <= now && e.end > now ? 'now' : ''} ${EXTRA_RE.test(e.title) ? 'extra' : ''}">
+          <div class="t">${fmtT(e.start)}–${fmtT(e.end)}</div><div class="n">${esc(e.title)}${e.desc ? `<small>${esc(e.desc)}</small>` : ''}</div></div>`).join('');
+      schoolHTML = `<div class="ctitle">Skoledag · ${esc(dayLabel(day))}</div>` + schoolHTML;
+    } else schoolHTML = '<div class="ctitle">Skoledag</div><div class="empty">Ingen skoletimer registrert den neste uken.</div>';
   }
-  $('days').innerHTML = html;
-  // synkstatus
-  $('sync').innerHTML = S.lastError ? '<span class="dot warn"></span>Synkfeil – se innstillinger'
-    : S.lastSync ? `<span class="dot ${S.syncError ? 'warn' : ''}"></span>${S.syncError ? 'Delvis synk' : 'Synket'} ${fmtT(S.lastSync)}` : '';
+  // ukens timeplan
+  let ttHTML = '';
+  if (k.school) {
+    const mon = now.getDay() === 6 || now.getDay() === 0 ? addDays(monday(now), 7) : monday(now);
+    ttHTML = `<section class="card" style="margin-top:14px"><div class="ctitle">Timeplan uke ${isoWeek(mon)}</div><div class="tt-grid">` +
+      [0, 1, 2, 3, 4].map(n => {
+        const d = addDays(mon, n), sd = schoolDay(k, d);
+        return `<div class="tt-col${sameDay(d, now) ? ' today' : ''}"><h4>${esc(d.toLocaleDateString('nb-NO', { weekday: 'short', day: 'numeric' }))}</h4>` +
+          (sd.evs.map(e => `<div class="tt-l" style="--kc:${esc(color)}"><div class="a">${e.allDay ? 'Hele dagen' : fmtT(e.start) + '–' + fmtT(e.end)}</div><div class="b">${esc(e.title)}</div></div>`).join('') || '<div class="empty">Fri</div>') + '</div>';
+      }).join('') + '</div></section>';
+  }
+  // aktiviteter neste 14 dager
+  const acts = S.events.filter(e => e.kind === 'act' && kidMatch(k, e) && e.end > now && e.start < addDays(sod(now), 14)).sort((a, b) => a.start - b.start);
+  let lastDay = '';
+  const actHTML = acts.map(e => {
+    const dl = dayLabel(e.start) + ' ' + e.start.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' });
+    const h = dl !== lastDay ? `<div class="dayh">${esc(dl)}</div>` : ''; lastDay = dl;
+    return h + evRow(e, sod(e.start), now);
+  }).join('') || '<div class="empty">Ingen aktiviteter de neste to ukene.</div>';
+  // tjen penger
+  const chores = choresFor(k.name);
+  const choreHTML = chores.map(c => {
+    const done = !!doneToday(k.name, c.id);
+    return `<div class="chore${done ? ' done' : ''}"><button class="chk${done ? ' on' : ''}" data-act="chore" data-kid="${i}" data-id="${esc(c.id)}" aria-label="${done ? 'Angre' : 'Gjort'}">${done ? checkSvg : ''}</button>
+      <div class="ct">${esc(c.title)}</div><div class="price">${nok(+c.price || 0)}</div></div>`;
+  }).join('') || '<div class="empty">Ingen oppgaver ennå. Legg dem til i innstillingene.</div>';
+  const hist = S.shared.log.filter(l => l.kid === k.name).sort((a, b) => b.ts - a.ts).slice(0, 5)
+    .map(l => `${esc(parseDate(l.date).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' }))}: ${esc(l.title)} +${nok(l.amount)}`).join('<br>');
+  // huskepunkter
+  const myTasks = tasksFor(k.name);
+
+  return `<div class="khead">${avatar(k, i)}<h1>${esc(k.name)}</h1><div class="saldo"><div class="small">Tjent</div><div class="amt">${nok(balance(k.name))}</div></div></div>
+    <div class="grid2">
+      <section class="card">${schoolHTML}</section>
+      <section class="card"><div class="ctitle">Tjen penger<span class="muted">Kryss av når du er ferdig</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
+    </div>
+    ${myTasks.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${myTasks.map(taskRow).join('')}</section>` : ''}
+    <section class="card"><div class="ctitle">Aktiviteter de neste to ukene</div>${actHTML}</section>
+    ${ttHTML}`;
 }
 
-let lastDay = sod(new Date()).getTime();
+// ---------- Hovedrender ----------
+function render() {
+  if ($('app').classList.contains('hidden')) return;
+  const now = new Date();
+  const active = document.activeElement;
+  if (active && active.closest && active.closest('#view form')) return;  // ikke forstyrr mens man skriver
+  const y = window.scrollY;
+  $('view').innerHTML = S.view === 'home' ? renderHome(now) : renderKid(+S.view, now);
+  window.scrollTo(0, y);
+  // bunnmeny
+  $('nav').innerHTML = `<button class="home${S.view === 'home' ? ' on' : ''}" data-nav="home">Hjem</button>` +
+    kids().map((k, i) => `<button class="${String(S.view) === String(i) ? 'on' : ''}" data-nav="${i}">${avatar(k, i)}<span class="nm">${esc(k.name)}</span><span class="bal">${nok(balance(k.name))}</span></button>`).join('');
+  const errs = Object.values(S.errors);
+  $('syncDot').className = 'syncdot' + (errs.length ? ' warn' : '');
+  $('syncDot').title = errs.length ? errs.join('\n') : S.lastSync ? 'Synket ' + fmtT(S.lastSync) : '';
+}
+
 function tick() {
   const now = new Date();
   $('clock').textContent = fmtT(now);
-  $('date').innerHTML = `<span>${esc(cap(now.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })))}</span><small>Uke ${isoWeek(now)}</small>`;
+  $('dateTxt').textContent = cap(now.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })) + ' · uke ' + isoWeek(now);
   applyTheme();
-  const d = sod(now).getTime();
-  if (d !== lastDay) { lastDay = d; sync(false); }
 }
-
 function applyTheme() {
   let t = S.theme;
   if (t === 'auto') { const h = new Date().getHours(); t = (h >= 21 || h < 6) ? 'dark' : 'light'; }
   document.documentElement.dataset.theme = t;
 }
+let toastT;
+function toast(m) { $('toast').textContent = m; $('toast').classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.add('hidden'), 3500); }
 
-// ==================== SKJERMER ====================
-function showLogin(msg) {
-  $('app').classList.add('hidden');
-  $('login').classList.remove('hidden');
-  const needsId = !CONFIG.CLIENT_ID;
-  $('setupBox').classList.toggle('hidden', !needsId || (!!S.clientId && !msg));
-  $('clientId').value = S.clientId || '';
-  $('originTxt').textContent = location.origin;
-  $('redirectTxt').textContent = redirectUri();
-  let m = msg || '';
-  if (!m && location.protocol === 'file:') m = 'Siden er åpnet som lokal fil. Google-innlogging krever at siden ligger på en nettadresse.';
-  $('loginMsg').textContent = m;
-  $('loginMsg').classList.toggle('hidden', !m);
+// =================== INNSTILLINGER ===================
+let draft = null;
+function calOpts(sel, empty) {
+  return `<option value="">${empty}</option>` + S.calendars.map(c => `<option value="${esc(c.id)}"${c.id === sel ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
 }
-
-function showApp() {
-  $('login').classList.add('hidden');
-  $('app').classList.remove('hidden');
-  $('banner').classList.add('hidden');
-  render();
-}
-
-function kidRowHTML(k) {
-  const opts = ['<option value="">— Velg kalender —</option>'].concat(S.calendars.map(c =>
-    `<option value="${esc(c.id)}"${c.id === k.cal ? ' selected' : ''}>${esc(c.name)}</option>`)).join('');
-  return `<div class="kidrow"><input type="text" placeholder="Navn" value="${esc(k.name || '')}"><select>${opts}</select>
-    <button type="button" title="Fjern" aria-label="Fjern">✕</button></div>`;
-}
-
 function openSettings() {
-  let kids = S.kids && S.kids.length ? S.kids : S.calendars.filter(c => SCHOOL_RE.test(c.name))
-    .map(c => ({ name: (c.name.match(/^skole\s+(.+)/i) || [])[1] || '', cal: c.id }));
-  if (!kids.length) kids = [{ name: '', cal: '' }];
-  $('kidList').innerHTML = kids.map(kidRowHTML).join('');
-  renderCalList();
-  $('daysSel').value = String(S.days);
-  $('themeSel').value = S.theme;
-  $('whoTxt').textContent = S.user ? 'Innlogget som ' + S.user.email : '';
+  draft = JSON.parse(JSON.stringify(cfg()));
+  draft.chores = JSON.parse(JSON.stringify(S.shared.chores));
+  if (!draft.kids.length) {
+    draft.kids = S.calendars.filter(c => /^(skole|timeplan)\b/i.test(c.name)).map(c => ({ name: (c.name.match(/^skole\s+(.+)/i) || [])[1] || '', school: c.id, own: '' }));
+    if (!draft.kids.length) draft.kids = [{ name: '', school: '', own: '' }];
+  }
+  if (!draft.activityCals) draft.activityCals = activityIds();
+  renderSettings();
   $('settings').classList.remove('hidden');
 }
+function closeSettings() { $('settings').classList.add('hidden'); draft = null; }
 
-function currentKidCals() {
-  return [...$('kidList').querySelectorAll('select')].map(s => s.value).filter(Boolean);
+function renderSettings() {
+  const d = draft;
+  const kidsNames = d.kids.map(k => k.name).filter(Boolean);
+  const sch = d.kids.map(k => k.school).filter(Boolean);
+  $('sheet').innerHTML = `
+    <h2>Innstillinger</h2>
+    <p class="hint">Lagres i Google-kontoen din og gjelder alle enheter som er logget inn med den.</p>
+
+    <h3>Barn</h3>
+    <p class="hint">Navn, kalenderen med timeplanen og eventuelt en egen aktivitetskalender (f.eks. Spond). Avtaler med navnet i tittelen havner også hos barnet.</p>
+    ${d.kids.map((k, i) => `<div class="frow kid" data-kidrow="${i}">
+      <input type="text" data-f="name" placeholder="Navn" value="${esc(k.name)}">
+      <select data-f="school">${calOpts(k.school, '— Skolekalender —')}</select>
+      <select data-f="own">${calOpts(k.own, '— Egen kalender —')}</select>
+      <button class="x" data-sact="delkid" data-i="${i}" aria-label="Fjern">✕</button></div>`).join('')}
+    <button class="btn small" data-sact="addkid">+ Legg til barn</button>
+
+    <h3>Kalendere for aktiviteter</h3>
+    ${S.calendars.map(c => { const isS = sch.includes(c.id); return `<label class="cal${isS ? ' dis' : ''}"><input type="checkbox" data-cal="${esc(c.id)}" ${!isS && d.activityCals.includes(c.id) ? 'checked' : ''} ${isS ? 'disabled' : ''}>
+      <span class="sw" style="background:${esc(c.color)}"></span>${esc(c.name)}${isS ? ' · skole' : ''}</label>`; }).join('') || `<div class="msg">${esc(S.errors.cal || 'Ingen kalendere funnet.')}</div>`}
+
+    <h3>Tjen penger</h3>
+    <p class="hint">Oppgaver barna kan krysse av for. Hver oppgave kan gjøres én gang per dag.</p>
+    ${d.chores.map((c, i) => `<div class="frow chorer" data-chorerow="${i}">
+      <input type="text" data-f="title" placeholder="Oppgave" value="${esc(c.title)}">
+      <input type="number" data-f="price" min="0" step="5" placeholder="kr" value="${esc(c.price)}">
+      <select data-f="kid"><option value="">Alle barn</option>${kidsNames.map(n => `<option${c.kids && c.kids[0] === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>
+      <button class="x" data-sact="delchore" data-i="${i}" aria-label="Fjern">✕</button></div>`).join('')}
+    <button class="btn small" data-sact="addchore">+ Legg til oppgave</button>
+    ${kids().length ? `<div style="margin-top:12px">${kids().map(k => `<div class="payrow"><b style="min-width:80px">${esc(k.name)}</b><span>Saldo ${nok(balance(k.name))}</span><span style="flex:1"></span>
+      <button class="btn small" data-sact="payout" data-kid="${esc(k.name)}">Registrer utbetaling</button></div>`).join('')}</div>` : ''}
+
+    <h3>Huskeliste</h3>
+    <p class="hint">Bruker en liste i Google Tasks. Skriv «Navn: …» for å vise punktet hos barnet, og «@i dag» eller «@i morgen» for å sette dato.</p>
+    <select data-g="taskList"><option value="">Huskeliste (opprettes automatisk)</option>${S.taskLists.map(l => `<option value="${esc(l.id)}"${l.id === d.taskList ? ' selected' : ''}>${esc(l.title)}</option>`).join('')}</select>
+
+    <h3>Holdeplass</h3>
+    <div class="cur">${d.stop ? 'Valgt: <b>' + esc(d.stop.name) + '</b>' : 'Ingen valgt'}</div>
+    <div class="addrow"><input type="text" id="stopQ" placeholder="Søk etter holdeplass"><button type="button" data-sact="stopsearch">Søk</button></div>
+    <div id="stopRes"></div>
+
+    <h3>Sted for vær</h3>
+    <div class="cur">Valgt: <b>${esc(d.place ? d.place.name : '—')}</b></div>
+    <div class="addrow"><input type="text" id="placeQ" placeholder="Søk etter sted eller adresse"><button type="button" data-sact="placesearch">Søk</button></div>
+    <div id="placeRes"></div>
+
+    <h3>Tema på denne skjermen</h3>
+    <select id="themeSel"><option value="auto">Automatisk (mørkt kl. 21–06)</option><option value="light">Lyst</option><option value="dark">Mørkt</option></select>
+
+    <div class="row"><button class="btn primary" data-sact="save">Lagre</button><button class="btn" data-sact="cancel">Avbryt</button><button class="btn" data-sact="fs">Fullskjerm</button></div>
+    <div class="who"><span>${S.user ? 'Innlogget som ' + esc(S.user.email) : ''}</span><span style="flex:1"></span><button class="btn small" data-sact="logout">Logg ut</button></div>`;
+  $('themeSel').value = S.theme;
+}
+function readDraft() {
+  if (!draft) return;
+  document.querySelectorAll('[data-kidrow]').forEach(r => {
+    const k = draft.kids[+r.dataset.kidrow]; if (!k) return;
+    r.querySelectorAll('[data-f]').forEach(el => { k[el.dataset.f] = el.value.trim(); });
+  });
+  document.querySelectorAll('[data-chorerow]').forEach(r => {
+    const c = draft.chores[+r.dataset.chorerow]; if (!c) return;
+    c.title = r.querySelector('[data-f=title]').value.trim();
+    c.price = parseFloat(r.querySelector('[data-f=price]').value) || 0;
+    const kid = r.querySelector('[data-f=kid]').value; c.kids = kid ? [kid] : [];
+  });
+  const boxes = document.querySelectorAll('[data-cal]');
+  if (boxes.length) draft.activityCals = [...boxes].filter(b => b.checked).map(b => b.dataset.cal);
+  const tl = document.querySelector('[data-g=taskList]'); if (tl) draft.taskList = tl.value;
+}
+async function searchInto(inputId, resId, layers, onPick) {
+  const q = $(inputId).value.trim(); if (!q) return;
+  $(resId).innerHTML = '<div class="small" style="margin-top:6px">Søker …</div>';
+  const res = await enturSearch(q, layers).catch(() => []);
+  $(resId).innerHTML = res.length ? `<div class="results">${res.map((r, i) => `<button type="button" data-pick="${i}"><b>${esc(r.name)}</b> <span class="muted">${esc(r.sub)}</span></button>`).join('')}</div>` : '<div class="small" style="margin-top:6px">Ingen treff.</div>';
+  $(resId).querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { readDraft(); onPick(res[+b.dataset.pick]); renderSettings(); });
 }
 
-function renderCalList() {
-  const sch = currentKidCals();
-  const checked = new Set([...$('calList').querySelectorAll('input:checked')].map(i => i.value));
-  const fresh = !$('calList').children.length;
-  $('calList').innerHTML = S.calendars.map(c => {
-    const isSchool = sch.includes(c.id);
-    const on = fresh ? (S.selected || []).includes(c.id) : checked.has(c.id);
-    return `<label class="cal${isSchool ? ' dis' : ''}"><input type="checkbox" value="${esc(c.id)}" ${on && !isSchool ? 'checked' : ''} ${isSchool ? 'disabled' : ''}>
-      <span class="sw" style="background:${esc(c.color)}"></span><span>${esc(c.name)}${isSchool ? ' · skole' : ''}</span></label>`;
-  }).join('') || `<div class="msg">${esc(S.lastError || 'Ingen kalendere funnet.')}</div>`;
-}
+$('sheet').addEventListener('click', async e => {
+  const b = e.target.closest('[data-sact]'); if (!b) return;
+  const a = b.dataset.sact;
+  if (a === 'cancel') return closeSettings();
+  if (a === 'logout') return logout();
+  if (a === 'fs') { const d = document.documentElement; (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d); return; }
+  if (a === 'stopsearch') return searchInto('stopQ', 'stopRes', 'venue', r => { draft.stop = { id: r.id, name: r.name }; });
+  if (a === 'placesearch') return searchInto('placeQ', 'placeRes', 'locality,address,venue', r => { draft.place = { name: r.name, lat: r.lat, lon: r.lon }; });
+  if (a === 'payout') {
+    const name = b.dataset.kid, bal = balance(name);
+    const v = prompt(`Hvor mye er utbetalt til ${name}? (saldo ${nok(bal)})`, String(Math.max(0, bal)));
+    const amt = parseFloat(String(v || '').replace(',', '.'));
+    if (amt > 0) { await Store.mutate(d => d.payouts.push({ id: uid(), kid: name, amount: amt, ts: Date.now() })); readDraft(); renderSettings(); }
+    return;
+  }
+  readDraft();
+  if (a === 'addkid') draft.kids.push({ name: '', school: '', own: '' });
+  if (a === 'delkid') draft.kids.splice(+b.dataset.i, 1);
+  if (a === 'addchore') draft.chores.push({ id: uid(), title: '', price: 10, kids: [] });
+  if (a === 'delchore') draft.chores.splice(+b.dataset.i, 1);
+  if (a === 'save') {
+    S.theme = $('themeSel').value; LS.set('kk.theme', S.theme); applyTheme();
+    const nd = draft; closeSettings();
+    const chores = nd.chores.filter(c => c.title); delete nd.chores;
+    nd.kids = nd.kids.filter(k => k.name || k.school);
+    const stopChanged = JSON.stringify(nd.stop) !== JSON.stringify(cfg().stop), placeChanged = JSON.stringify(nd.place) !== JSON.stringify(cfg().place);
+    await Store.mutate(d => { d.cfg = Object.assign(d.cfg, nd); d.chores = chores; });
+    if (stopChanged) loadDeps().then(render).catch(() => {});
+    if (placeChanged) loadWeather().then(render).catch(() => {});
+    syncAll(false);
+    return;
+  }
+  renderSettings();
+});
+$('sheet').addEventListener('change', e => { if (e.target.matches('[data-kidrow] select')) { readDraft(); renderSettings(); } });
+$('settings').addEventListener('click', e => { if (e.target.id === 'settings') closeSettings(); });
 
-function saveSettings() {
-  S.kids = [...$('kidList').querySelectorAll('.kidrow')].map(r => ({
-    name: r.querySelector('input').value.trim(), cal: r.querySelector('select').value
-  })).filter(k => k.name || k.cal);
-  S.selected = [...$('calList').querySelectorAll('input:checked')].map(i => i.value);
-  S.days = parseInt($('daysSel').value, 10);
-  S.theme = $('themeSel').value;
-  LS.set('kk.kids', S.kids); LS.set('kk.selected', S.selected); LS.set('kk.days', S.days); LS.set('kk.theme', S.theme);
-  $('settings').classList.add('hidden');
-  applyTheme();
-  sync(false);
-}
-
-// ---------- Skjerm våken ----------
-let wakeLock = null;
-async function keepAwake() {
-  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e) {}
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); sync(false); } });
-document.addEventListener('click', keepAwake);
-
-// ---------- Hendelser ----------
+// =================== HENDELSER ===================
+$('view').addEventListener('click', async e => {
+  const t = e.target.closest('[data-act],[data-chip],[data-day],[data-kid]'); if (!t) return;
+  if (t.dataset.chip) { S.chip = t.dataset.chip; return render(); }
+  if (t.dataset.day) { S.selDay = parseDate(t.dataset.day); return render(); }
+  const a = t.dataset.act;
+  if (!a && t.dataset.kid != null) { S.view = +t.dataset.kid; window.scrollTo(0, 0); return render(); }
+  if (a === 'addtoggle') { S.adding = !S.adding; render(); if (S.adding) { const i = document.querySelector('[data-form=task] input'); i && i.focus(); } return; }
+  if (a === 'task') return completeTask(t.dataset.id);
+  if (a && a.startsWith('wk')) {
+    const n = a === 'wk0' ? 0 : S.weekOffset + (a === 'wk1' ? 1 : -1);
+    S.weekOffset = n;
+    S.selDay = n === 0 ? sod(new Date()) : addDays(monday(new Date()), n * 7);
+    return render();
+  }
+  if (a === 'chore') {
+    const k = kids()[+t.dataset.kid], c = S.shared.chores.find(x => x.id === t.dataset.id); if (!k || !c) return;
+    const today = dkey(new Date());
+    const ex = doneToday(k.name, c.id);
+    if (!ex) toast(`Bra jobba, ${k.name}! +${nok(+c.price || 0)}`);
+    await Store.mutate(d => {
+      const i = d.log.findIndex(l => l.kid === k.name && l.chore === c.id && l.date === today);
+      if (i >= 0) d.log.splice(i, 1);
+      else d.log.push({ id: uid(), kid: k.name, chore: c.id, title: c.title, amount: +c.price || 0, date: today, ts: Date.now() });
+    });
+  }
+});
+$('view').addEventListener('submit', e => {
+  const f = e.target.closest('[data-form=task]'); if (!f) return;
+  e.preventDefault(); const v = f.querySelector('input').value; document.activeElement.blur(); S.adding = false; addTask(v);
+});
+$('nav').addEventListener('click', e => {
+  const b = e.target.closest('[data-nav]'); if (!b) return;
+  S.view = b.dataset.nav === 'home' ? 'home' : +b.dataset.nav; window.scrollTo(0, 0); render();
+});
+$('settingsBtn').onclick = openSettings;
+$('refreshBtn').onclick = () => syncAll(true);
+$('bannerBtn').onclick = () => login(false);
 $('loginBtn').onclick = () => {
   if (!CONFIG.CLIENT_ID) {
     const v = $('clientId').value.trim();
@@ -643,71 +1044,63 @@ $('loginBtn').onclick = () => {
   }
   login(false);
 };
-$('settingsBtn').onclick = openSettings;
-$('refreshBtn').onclick = () => sync(true);
-$('saveBtn').onclick = saveSettings;
-$('cancelBtn').onclick = () => $('settings').classList.add('hidden');
-$('logoutBtn').onclick = logout;
-$('bannerBtn').onclick = () => login(false);
-$('addKid').onclick = () => { $('kidList').insertAdjacentHTML('beforeend', kidRowHTML({ name: '', cal: '' })); };
-$('kidList').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') { e.target.closest('.kidrow').remove(); renderCalList(); } });
-$('kidList').addEventListener('change', e => {
-  if (e.target.tagName !== 'SELECT') return;
-  const inp = e.target.parentElement.querySelector('input');
-  if (!inp.value.trim() && e.target.value) {   // foreslå navn fra kalendernavnet
-    const c = S.calendars.find(x => x.id === e.target.value);
-    const m = c && c.name.match(/^skole\s+(.+)/i);
-    if (m) inp.value = m[1];
-  }
-  renderCalList();
-});
-$('fsBtn').onclick = () => { const d = document.documentElement; (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d); };
-$('settings').onclick = e => { if (e.target.id === 'settings') $('settings').classList.add('hidden'); };
 
-// ==================== START ====================
+// Tilbake til forsiden etter 2 min uten berøring
+let idleT;
+function bumpIdle() { clearTimeout(idleT); idleT = setTimeout(() => { if (S.view !== 'home' && $('settings').classList.contains('hidden')) { S.view = 'home'; S.selDay = null; S.weekOffset = 0; render(); } }, 120e3); }
+['click', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, bumpIdle, { passive: true }));
+
+// Skjerm våken
+let wakeLock = null;
+async function keepAwake() { try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e) {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); syncAll(false); } });
+document.addEventListener('click', keepAwake);
+
+// =================== SKJERMER ===================
+function showLogin(msg) {
+  $('app').classList.add('hidden'); $('login').classList.remove('hidden');
+  $('setupBox').classList.toggle('hidden', !!CONFIG.CLIENT_ID || (!!S.clientId && !msg));
+  $('clientId').value = S.clientId || '';
+  $('originTxt').textContent = location.origin; $('redirectTxt').textContent = redirectUri();
+  let m = msg || '';
+  if (!m && location.protocol === 'file:') m = 'Siden er åpnet som lokal fil. Google-innlogging krever at siden ligger på en nettadresse.';
+  $('loginMsg').textContent = m; $('loginMsg').classList.toggle('hidden', !m);
+}
+
+// =================== START ===================
 async function start() {
   applyTheme();
   const err = handleRedirect();
   if (err) { clearSession(); showLogin(err); return; }
-
   if (!tokenValid()) {
-    if (S.token && S.user && S.clientId && Date.now() - LS.get('kk.silentFailed', 0) > 30 * 60 * 1000) {
-      // utløpt nøkkel: prøv stille fornyelse hos Google
-      S.token = null; LS.del('kk.token');
-      login(true);
-      return;
-    }
-    clearSession();
-    showLogin();
-    return;
+    if (S.token && S.user && S.clientId && Date.now() - LS.get('kk.silentFailed', 0) > 30 * 60 * 1000) { S.token = null; LS.del('kk.token'); login(true); return; }
+    clearSession(); showLogin(); return;
+  }
+  if (S.token.scope && !S.token.scope.includes(SC.cal)) { clearSession(); showLogin('Du ga ikke tilgang til kalenderen. Logg inn igjen og huk av for alle tilgangene når Google spør.'); return; }
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + S.token.v } });
+    if (!r.ok) throw new Error(); const u = await r.json();
+    S.user = { email: (u.email || '').toLowerCase(), name: u.name || u.email }; LS.set('kk.user', S.user);
+  } catch (e) { clearSession(); showLogin('Klarte ikke å hente brukerinfo fra Google. Logg inn igjen.'); return; }
+  if (CONFIG.ALLOWED_EMAILS.length && !CONFIG.ALLOWED_EMAILS.map(x => x.toLowerCase()).includes(S.user.email)) {
+    const em = S.user.email; logout(); showLogin(`${em} har ikke tilgang til denne siden.`); return;
+  }
+  if (!hasScope(SC.tasks) || !hasScope(SC.drive)) {
+    $('bannerTxt').textContent = 'Nye funksjoner trenger mer tilgang.'; $('bannerBtn').textContent = 'Gi tilgang'; $('banner').classList.remove('hidden');
   }
 
-  if (S.token.scope && !/calendar/.test(S.token.scope)) {
-    clearSession();
-    showLogin('Du ga ikke tilgang til kalenderen. Logg inn igjen og huk av for «Se kalenderne dine» når Google spør.');
-    return;
-  }
-
-  try { await loadUser(); }
-  catch (e) { clearSession(); showLogin('Klarte ikke å hente brukerinfo fra Google. Prøv å logge inn igjen.'); return; }
-
-  if (!allowed()) {
-    const email = S.user.email;
-    logout();
-    showLogin(`${email} har ikke tilgang til denne siden.`);
-    return;
-  }
-
-  showApp();
-  scheduleRenew();
-  tick();
-  setInterval(tick, 10 * 1000);
-  setInterval(render, 60 * 1000);
-  setInterval(() => sync(false), REFRESH_MS);
-  await sync(true);
-  if (!S.kids) openSettings();   // første gang: velg skolekalendere
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+  tick(); render(); scheduleRenew(); bumpIdle();
+  setInterval(tick, 10e3);
+  setInterval(render, 60e3);
+  setInterval(() => syncAll(false), 5 * 60e3);
+  setInterval(() => { loadDeps().then(render).catch(() => {}); }, 60e3);
+  setInterval(() => { loadTasks().then(render).catch(() => {}); }, 2 * 60e3);
+  let lastDay = dkey(new Date());
+  setInterval(() => { const d = dkey(new Date()); if (d !== lastDay) { lastDay = d; S.selDay = null; S.weekOffset = 0; syncAll(false); } }, 30e3);
+  await syncAll(true);
+  if (!kids().length) openSettings();
 }
-
 start();
 })();
 </script>
