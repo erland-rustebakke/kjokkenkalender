@@ -292,7 +292,7 @@ const LS = {
 
 const DEFAULT_SHARED = () => ({
   v: 2,
-  cfg: { kids: [], activityCals: null, stop: null, place: { name: 'Lillestrøm', lat: 59.956, lon: 11.050 }, taskList: '' },
+  cfg: { kids: [], activityCals: null, stop: null, route: null, place: { name: 'Lillestrøm', lat: 59.956, lon: 11.050 }, taskList: '' },
   chores: [], log: [], payouts: []
 });
 
@@ -571,16 +571,45 @@ async function loadWeather() {
 
 // =================== AVGANGER (Entur) ===================
 const MODE_COLOR = { bus: '#e60000', tram: '#0b91ef', metro: '#ec700c', rail: '#1e3a8a', water: '#682c88', coach: '#75a300' };
-async function loadDeps() {
-  const st = cfg().stop; if (!st) { S.deps = null; return; }
-  const q = `{stopPlace(id:"${st.id}"){name estimatedCalls(numberOfDepartures:8,timeRange:14400){expectedDepartureTime aimedDepartureTime realtime cancellation
-    destinationDisplay{frontText} serviceJourney{line{publicCode transportMode}}}}}`;
+const DEFAULT_ROUTE = { from: 'Lillestrøm stasjon', to: 'Oslo S' };
+async function enturGQL(query) {
   const r = await fetch('https://api.entur.io/journey-planner/v3/graphql', { method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'ET-Client-Name': ENTUR_CLIENT }, body: JSON.stringify({ query: q }) });
+    headers: { 'Content-Type': 'application/json', 'ET-Client-Name': ENTUR_CLIENT }, body: JSON.stringify({ query }) });
   if (!r.ok) throw new Error('Entur ' + r.status);
-  const j = await r.json(); const sp = j.data && j.data.stopPlace;
-  S.deps = sp ? { name: sp.name, calls: sp.estimatedCalls.filter(c => !c.cancellation).map(c => ({ t: new Date(c.expectedDepartureTime), rt: c.realtime,
-    dst: c.destinationDisplay.frontText, line: c.serviceJourney.line.publicCode, mode: c.serviceJourney.line.transportMode })) } : null;
+  const j = await r.json();
+  if (j.errors && j.errors.length) throw new Error(j.errors[0].message);
+  return j.data;
+}
+// Finn stasjons-ID fra navn (første eksakte treff, ellers første treff)
+async function resolveStop(name) {
+  const cached = LS.get('kk.stop.' + name, null); if (cached) return cached;
+  const res = await enturSearch(name, 'venue');
+  const hit = res.find(r => r.name.toLowerCase() === name.toLowerCase()) || res[0];
+  if (!hit) throw new Error('fant ikke ' + name);
+  const v = { id: hit.id, name: hit.name }; LS.set('kk.stop.' + name, v); return v;
+}
+async function getRoute() {
+  const r = cfg().route || { from: { name: DEFAULT_ROUTE.from }, to: { name: DEFAULT_ROUTE.to } };
+  const [from, to] = await Promise.all([r.from.id ? r.from : resolveStop(r.from.name), r.to.id ? r.to : resolveStop(r.to.name)]);
+  return { from, to };
+}
+async function loadDeps() {
+  const rt = await getRoute();
+  const q = `{trip(from:{place:"${rt.from.id}"},to:{place:"${rt.to.id}"},numTripPatterns:12,
+    modes:{accessMode:foot,egressMode:foot,transportModes:[{transportMode:rail}]}){
+    tripPatterns{legs{mode aimedStartTime expectedStartTime expectedEndTime realtime
+      line{publicCode} fromEstimatedCall{cancellation quay{publicCode}} toPlace{name}}}}}`;
+  const d = await enturGQL(q);
+  const pats = ((d.trip || {}).tripPatterns || []);
+  const seen = new Set();
+  const calls = pats.map(p => p.legs.filter(l => l.mode !== 'foot'))
+    .filter(legs => legs.length === 1 && legs[0].mode === 'rail')        // kun direktetog, ingen bytte
+    .map(([l]) => ({ t: new Date(l.expectedStartTime), aimed: new Date(l.aimedStartTime), arr: new Date(l.expectedEndTime),
+      rt: l.realtime, line: (l.line || {}).publicCode || 'Tog', track: l.fromEstimatedCall && l.fromEstimatedCall.quay ? l.fromEstimatedCall.quay.publicCode : '',
+      cancelled: !!(l.fromEstimatedCall && l.fromEstimatedCall.cancellation) }))
+    .filter(c => { const k = c.line + c.aimed.getTime(); if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => a.t - b.t);
+  S.deps = { from: rt.from.name, to: rt.to.name, calls };
   delete S.errors.deps;
 }
 async function enturSearch(text, layers) {
@@ -675,16 +704,18 @@ function weatherCard() {
   </section>`;
 }
 function depsCard() {
-  const st = cfg().stop;
-  if (!st) return `<section class="card"><div class="ctitle">Avganger</div><div class="empty">Velg holdeplass i innstillingene.</div></section>`;
   const d = S.deps, now = Date.now();
+  const title = d ? `${esc(d.from.replace(/ stasjon$/i, ''))} → ${esc(d.to)}` : 'Tog';
   const rows = d ? d.calls.filter(c => c.t.getTime() > now - 30e3).slice(0, 4).map(c => {
     const min = Math.round((c.t - now) / 60e3);
-    const when = min <= 0 ? 'Nå' : min < 15 ? `${min} min` : fmtT(c.t);
-    return `<div class="dep"><span class="line" style="background:${MODE_COLOR[c.mode] || '#475569'}">${esc(c.line)}</span><span class="dst">${esc(c.dst)}</span><span class="when${c.rt ? ' rt' : ''}">${when}</span></div>`;
+    const when = c.cancelled ? 'Innstilt' : min <= 0 ? 'Nå' : min < 15 ? `${min} min` : fmtT(c.t);
+    const delay = Math.round((c.t - c.aimed) / 60e3);
+    const sub = [c.track ? 'Spor ' + c.track : '', `fremme ${fmtT(c.arr)}`, delay >= 2 ? `<span style="color:var(--warn)">+${delay} min</span>` : ''].filter(Boolean).join(' · ');
+    return `<div class="dep"${c.cancelled ? ' style="opacity:.5;text-decoration:line-through"' : ''}><span class="line" style="background:${MODE_COLOR.rail}">${esc(c.line)}</span>
+      <span class="dst">${delay >= 2 ? `<s class="muted">${fmtT(c.aimed)}</s> ` : ''}${fmtT(c.t)}<div class="small">${sub}</div></span><span class="when${c.rt ? ' rt' : ''}">${when}</span></div>`;
   }).join('') : '';
-  return `<section class="card"><div class="ctitle">${esc(d ? d.name : st.name)}<span class="muted">Entur</span></div>
-    ${rows || errBox('deps') || '<div class="empty">Ingen avganger de neste timene.</div>'}</section>`;
+  return `<section class="card"><div class="ctitle">${title}<span class="muted">Direktetog · Entur</span></div>
+    ${rows || errBox('deps') || (d ? '<div class="empty">Ingen direktetog de neste timene.</div>' : '<div class="empty">Henter avganger …</div>')}</section>`;
 }
 function tasksCard() {
   const list = S.tasks.slice(0, 5);
@@ -920,10 +951,14 @@ function renderSettings() {
     <p class="hint">Bruker en liste i Google Tasks. Skriv «Navn: …» for å vise punktet hos barnet, og «@i dag» eller «@i morgen» for å sette dato.</p>
     <select data-g="taskList"><option value="">Huskeliste (opprettes automatisk)</option>${S.taskLists.map(l => `<option value="${esc(l.id)}"${l.id === d.taskList ? ' selected' : ''}>${esc(l.title)}</option>`).join('')}</select>
 
-    <h3>Holdeplass</h3>
-    <div class="cur">${d.stop ? 'Valgt: <b>' + esc(d.stop.name) + '</b>' : 'Ingen valgt'}</div>
-    <div class="addrow"><input type="text" id="stopQ" placeholder="Søk etter holdeplass"><button type="button" data-sact="stopsearch">Søk</button></div>
-    <div id="stopRes"></div>
+    <h3>Togavganger</h3>
+    <p class="hint">Viser direktetog uten bytte. Standard er Lillestrøm → Oslo S.</p>
+    <div class="cur">Fra <b>${esc(d.route ? d.route.from.name : DEFAULT_ROUTE.from)}</b> til <b>${esc(d.route ? d.route.to.name : DEFAULT_ROUTE.to)}</b>
+      ${d.route ? '<button type="button" class="linkbtn" data-sact="routereset" style="margin-left:8px">Tilbakestill</button>' : ''}</div>
+    <div class="addrow"><input type="text" id="fromQ" placeholder="Fra stasjon"><button type="button" data-sact="fromsearch">Søk</button></div>
+    <div id="fromRes"></div>
+    <div class="addrow"><input type="text" id="toQ" placeholder="Til stasjon"><button type="button" data-sact="tosearch">Søk</button></div>
+    <div id="toRes"></div>
 
     <h3>Sted for vær</h3>
     <div class="cur">Valgt: <b>${esc(d.place ? d.place.name : '—')}</b></div>
@@ -967,7 +1002,10 @@ $('sheet').addEventListener('click', async e => {
   if (a === 'cancel') return closeSettings();
   if (a === 'logout') return logout();
   if (a === 'fs') { const d = document.documentElement; (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d); return; }
-  if (a === 'stopsearch') return searchInto('stopQ', 'stopRes', 'venue', r => { draft.stop = { id: r.id, name: r.name }; });
+  const baseRoute = () => draft.route || { from: { name: DEFAULT_ROUTE.from, id: (LS.get('kk.stop.' + DEFAULT_ROUTE.from, {}) || {}).id }, to: { name: DEFAULT_ROUTE.to, id: (LS.get('kk.stop.' + DEFAULT_ROUTE.to, {}) || {}).id } };
+  if (a === 'fromsearch') return searchInto('fromQ', 'fromRes', 'venue', r => { draft.route = Object.assign(baseRoute(), { from: { id: r.id, name: r.name } }); });
+  if (a === 'tosearch') return searchInto('toQ', 'toRes', 'venue', r => { draft.route = Object.assign(baseRoute(), { to: { id: r.id, name: r.name } }); });
+  if (a === 'routereset') { readDraft(); draft.route = null; renderSettings(); return; }
   if (a === 'placesearch') return searchInto('placeQ', 'placeRes', 'locality,address,venue', r => { draft.place = { name: r.name, lat: r.lat, lon: r.lon }; });
   if (a === 'payout') {
     const name = b.dataset.kid, bal = balance(name);
@@ -986,7 +1024,7 @@ $('sheet').addEventListener('click', async e => {
     const nd = draft; closeSettings();
     const chores = nd.chores.filter(c => c.title); delete nd.chores;
     nd.kids = nd.kids.filter(k => k.name || k.school);
-    const stopChanged = JSON.stringify(nd.stop) !== JSON.stringify(cfg().stop), placeChanged = JSON.stringify(nd.place) !== JSON.stringify(cfg().place);
+    const stopChanged = JSON.stringify(nd.route) !== JSON.stringify(cfg().route), placeChanged = JSON.stringify(nd.place) !== JSON.stringify(cfg().place);
     await Store.mutate(d => { d.cfg = Object.assign(d.cfg, nd); d.chores = chores; });
     if (stopChanged) loadDeps().then(render).catch(() => {});
     if (placeChanged) loadWeather().then(render).catch(() => {});
