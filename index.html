@@ -743,9 +743,18 @@ function parseSchoolDate(text, now) {
 const SCHOOL_DATE_RE = /\b\d{1,2}\.?\s*(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)\b/i;
 const SCHOOL_KEY_RE = /\b(husk|ta med|minn|viktig|glem ikke|ikke glem|trenger|må ha|må huske|sjekk)\b/i;
 // splitter kun der punktum/utrop/spørsmål etterfølges av stor bokstav eller tall - unngår å kutte
-// midt i en dato ("20. oktober") eller et klokkeslett ("kl.17.30"), der neste tegn er småbokstav/tall
-const SENT_SPLIT_RE = /(?<=[.!?])\s+(?=[A-ZÆØÅ0-9])/;
-const splitSentences = p => p.split(SENT_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+// midt i en dato ("20. oktober") eller et klokkeslett ("kl.17.30"), der neste tegn er småbokstav/tall.
+// (ingen lookbehind her - Safari < 16.4, bl.a. på eldre iPad, støtter ikke det og ville feilet helt)
+const SENT_SPLIT_RE = /([.!?])\s+(?=[A-ZÆØÅ0-9])/;
+function splitSentences(p) {
+  const parts = p.split(SENT_SPLIT_RE);
+  const out = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const s = (parts[i] + (parts[i + 1] || '')).trim();
+    if (s) out.push(s);
+  }
+  return out;
+}
 function splitSchoolChunks(raw) {
   let ps = raw.split(/\n\s*\n+/).map(s => s.trim()).filter(Boolean);
   if (ps.length <= 1) ps = raw.split(/\n+/).map(s => s.trim()).filter(Boolean);
