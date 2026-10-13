@@ -81,6 +81,18 @@ button{cursor:pointer}
 .task:first-of-type{border-top:0}
 .husk-sep{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:12px 0 4px;margin-top:4px;border-top:1px solid var(--line)}
 .husk-sep + .task{border-top:0}
+.husk-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0}
+.husk-col{padding:0 18px;min-width:0}
+.husk-col:first-child{padding-left:0}
+.husk-col+.husk-col{border-left:1px solid var(--line)}
+.husk-colhead{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;padding-bottom:8px;margin-bottom:2px}
+.husk-colhead i{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.husk-col .husk-sep:first-of-type{margin-top:0;padding-top:0;border-top:0}
+@media (max-width:760px){
+  .husk-cols{grid-template-columns:1fr;gap:14px}
+  .husk-col{padding:0;border-left:0!important}
+  .husk-col+.husk-col{border-top:1px solid var(--line);padding-top:12px}
+}
 .chk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--muted);background:transparent;padding:0;margin-top:1px;display:grid;place-items:center}
 .chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
 .chk svg{width:14px;height:14px}
@@ -1031,25 +1043,39 @@ function depsCard() {
 function tasksCard() {
   const now = new Date();
   const todayK = dkey(now), tmrwK = dkey(addDays(now, 1));
-  const todayList = S.tasks.filter(t => t.due === todayK || !t.due);
-  const tmrwList = S.tasks.filter(t => t.due === tmrwK);
-  const later = S.tasks.length - todayList.length - tmrwList.length;
+  const relevant = S.tasks.filter(t => t.due === todayK || t.due === tmrwK || !t.due);
+  const later = S.tasks.length - relevant.length;
   const gymAll = kids().flatMap(k => gymNearForKid(k, now));
-  const gymToday = gymAll.filter(g => dkey(g.day) === todayK);
-  const gymTmrw = gymAll.filter(g => dkey(g.day) === tmrwK);
-  const gymHTML = g => gymReminderRow(`${g.kid}: Husk tøy til ${g.title}`);
-  const group = (label, gymList, taskList) => (gymList.length || taskList.length)
-    ? `<div class="husk-sep">${label}</div>${gymList.map(gymHTML).join('')}${taskList.map(taskRow).join('')}` : '';
-  const empty = !todayList.length && !tmrwList.length && !gymAll.length && !S.errors.tasks;
+
+  const kidNames = kids().map(k => k.name);
+  const ownerOf = title => kidNames.find(n => title.toLowerCase().startsWith(n.toLowerCase() + ':'));
+  const plainRow = t => `<div class="task"><button class="chk" data-act="task" data-id="${esc(t.id)}" aria-label="Fullfør"></button><div class="tt">${esc(t.label)}</div></div>`;
+  const daySection = (label, gymList, taskList) => (gymList.length || taskList.length)
+    ? `<div class="husk-sep">${label}</div>${gymList.map(g => gymReminderRow('Husk tøy til ' + g.title)).join('')}${taskList.map(plainRow).join('')}` : '';
+  const colHTML = (headerHTML, myGym, myTasks) => {
+    const today = daySection('I dag', myGym.filter(g => dkey(g.day) === todayK), myTasks.filter(t => t.due === todayK || !t.due));
+    const tmrw = daySection('I morgen', myGym.filter(g => dkey(g.day) === tmrwK), myTasks.filter(t => t.due === tmrwK));
+    const body = today + tmrw || '<div class="empty" style="padding:2px 0">Ingenting</div>';
+    return `<div class="husk-col"><div class="husk-colhead">${headerHTML}</div>${body}</div>`;
+  };
+
+  const cols = kids().map((k, i) => {
+    const prefix = new RegExp('^' + k.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':\\s*', 'i');
+    const myTasks = relevant.filter(t => ownerOf(t.title) === k.name).map(t => ({ id: t.id, due: t.due, label: t.title.replace(prefix, '').trim() }));
+    return colHTML(`<i style="background:${esc(kidColor(k, i))}"></i>${esc(k.name)}`, gymAll.filter(g => g.kid === k.name), myTasks);
+  });
+  const felles = relevant.filter(t => !ownerOf(t.title)).map(t => ({ id: t.id, due: t.due, label: t.title }));
+  if (felles.length) cols.push(colHTML('Felles', [], felles));
+
+  const nothing = !gymAll.length && !relevant.length;
   return `<section class="card"><div class="ctitle">Huskeliste<span style="display:flex;gap:10px">
       <button class="linkbtn" data-act="schooltoggle" aria-label="Lim inn skolemelding">${S.schoolPasteOpen ? 'Lukk' : '📋 Skolemelding'}</button>
       <button class="linkbtn" data-act="addtoggle" aria-label="Legg til">${S.adding ? 'Lukk' : '+ Legg til'}</button></span></div>
     ${S.schoolPasteOpen ? schoolPasteForm() : ''}
     ${S.adding ? `<form class="addrow" data-form="task"><input name="t" placeholder="F.eks. Marie: gymtøy @i morgen" autocomplete="off"><button>Legg til</button></form>` : ''}
     ${errBox('tasks')}
-    ${group('I dag', gymToday, todayList)}${group('I morgen', gymTmrw, tmrwList)}
-    ${empty ? '<div class="empty">Ingenting å huske på 🎉</div>' : ''}
-    ${later > 0 ? `<div class="small" style="margin-top:6px">+ ${later} senere</div>` : ''}</section>`;
+    ${nothing && !S.errors.tasks ? '<div class="empty">Ingenting å huske på 🎉</div>' : `<div class="husk-cols">${cols.join('')}</div>`}
+    ${later > 0 ? `<div class="small" style="margin-top:10px">+ ${later} senere</div>` : ''}</section>`;
 }
 function schoolKidChips() {
   const chips = [`<button type="button" class="chip${S.schoolKid === 'all' ? ' on' : ''}" data-schoolkid="all">Alle</button>`]
@@ -1134,7 +1160,10 @@ function weekCard(now) {
   </section>`;
 }
 function renderHome(now) {
-  return `<div class="grid2">${weatherCard()}${depsCard()}${tasksCard()}${highlightCard()}</div>${chipsHTML()}${weekCard(now)}`;
+  return `<div class="grid2">${weatherCard()}${depsCard()}</div>
+    <div style="margin-bottom:14px">${tasksCard()}</div>
+    ${chipsHTML()}${weekCard(now)}
+    <div style="margin-top:14px">${highlightCard()}</div>`;
 }
 
 // ---------- Mat ----------
