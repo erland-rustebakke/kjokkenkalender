@@ -177,7 +177,9 @@ button{cursor:pointer}
 .hint{color:var(--muted);font-size:13.5px;margin:0 0 10px;line-height:1.45}
 .sheet input[type=text],.sheet input[type=number],.sheet select{width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg1)}
 .frow{display:grid;gap:8px;margin-bottom:8px;align-items:center}
-.frow.kid{grid-template-columns:1fr 1fr 1fr 40px}
+.frow.kid{grid-template-columns:1fr 1.4fr 40px}
+.kidbox{border:1px solid var(--line);border-radius:14px;padding:12px 12px 6px;margin-bottom:10px}
+.kidbox .cal{padding:6px 0}
 .frow.chorer{grid-template-columns:1.6fr 90px 1fr 40px}
 .frow button.x{height:40px;border:1px solid var(--line);background:var(--bg1);border-radius:10px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border-radius:12px;border:1px solid var(--line);background:var(--bg1);font-weight:600}
@@ -417,9 +419,10 @@ function normShared(d) {
   // migrer fra eldre versjon (lokale innstillinger)
   if (!d.cfg.kids.length) {
     const old = LS.get('kk.kids', null);
-    if (old && old.length) d.cfg.kids = old.map(k => ({ name: k.name, school: k.cal || '', own: '' }));
+    if (old && old.length) d.cfg.kids = old.map(k => ({ name: k.name, school: k.cal || '', cals: [] }));
   }
   if (!d.cfg.activityCals) { const old = LS.get('kk.selected', null); if (old) d.cfg.activityCals = old; }
+  d.cfg.kids.forEach(k => { k.cals = [...new Set([...(k.cals || []), k.own].filter(Boolean))]; delete k.own; });
   return d;
 }
 
@@ -479,6 +482,7 @@ const Store = {
 };
 const cfg = () => S.shared.cfg;
 const kids = () => cfg().kids.filter(k => k.name);
+const kidCals = k => [...new Set([...(k.cals || []), k.own].filter(Boolean))];
 
 // =================== KALENDER ===================
 async function loadCalendars() {
@@ -490,7 +494,7 @@ const schoolIds = () => kids().map(k => k.school).filter(Boolean);
 const activityIds = () => {
   const sel = cfg().activityCals || S.calendars.filter(c => (c.primary || c.visible) && !/^(skole|timeplan)\b/i.test(c.name)).map(c => c.id);
   const sch = schoolIds();
-  return [...new Set([...sel, ...kids().map(k => k.own).filter(Boolean)])].filter(id => !sch.includes(id));
+  return [...new Set([...sel, ...kids().flatMap(kidCals)])].filter(id => !sch.includes(id));
 };
 
 function norm(e, cal, kind) {
@@ -658,7 +662,7 @@ function eventsOn(day, filter) {
 }
 function kidMatch(k, e) {
   if (e.kind === 'school') return e.cal === k.school;
-  return (k.own && e.cal === k.own) || new RegExp('\\b' + k.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(e.title);
+  return kidCals(k).includes(e.cal) || new RegExp('\\b' + k.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(e.title);
 }
 function chipFilter(e) {
   const c = S.chip;
@@ -919,8 +923,8 @@ function openSettings() {
   draft = JSON.parse(JSON.stringify(cfg()));
   draft.chores = JSON.parse(JSON.stringify(S.shared.chores));
   if (!draft.kids.length) {
-    draft.kids = S.calendars.filter(c => /^(skole|timeplan)\b/i.test(c.name)).map(c => ({ name: (c.name.match(/^skole\s+(.+)/i) || [])[1] || '', school: c.id, own: '' }));
-    if (!draft.kids.length) draft.kids = [{ name: '', school: '', own: '' }];
+    draft.kids = S.calendars.filter(c => /^(skole|timeplan)\b/i.test(c.name)).map(c => ({ name: (c.name.match(/^skole\s+(.+)/i) || [])[1] || '', school: c.id, cals: [] }));
+    if (!draft.kids.length) draft.kids = [{ name: '', school: '', cals: [] }];
   }
   if (!draft.activityCals) draft.activityCals = activityIds();
   renderSettings();
@@ -939,17 +943,21 @@ function renderSettings() {
       : `<p class="hint">✓ Lagres i Google Drive for ${esc(S.user ? S.user.email : 'kontoen din')} og gjelder alle enheter som er logget inn med samme konto.</p>`}
 
     <h3>Barn</h3>
-    <p class="hint">Navn, kalenderen med timeplanen og eventuelt en egen aktivitetskalender (f.eks. Spond). Avtaler med navnet i tittelen havner også hos barnet.</p>
-    ${d.kids.map((k, i) => `<div class="frow kid" data-kidrow="${i}">
-      <input type="text" data-f="name" placeholder="Navn" value="${esc(k.name)}">
-      <select data-f="school">${calOpts(k.school, '— Skolekalender —')}</select>
-      <select data-f="own">${calOpts(k.own, '— Egen kalender —')}</select>
-      <button class="x" data-sact="delkid" data-i="${i}" aria-label="Fjern">✕</button></div>`).join('')}
+    <p class="hint">For hvert barn: skolekalenderen med timeplanen, og så mange aktivitetskalendere du vil (f.eks. Spond). Avtaler med barnets navn i tittelen havner også hos barnet.</p>
+    ${d.kids.map((k, i) => { const mine = kidCals(k); return `<div class="kidbox" data-kidrow="${i}">
+      <div class="frow kid">
+        <input type="text" data-f="name" placeholder="Navn" value="${esc(k.name)}">
+        <select data-f="school">${calOpts(k.school, '— Skolekalender —')}</select>
+        <button class="x" data-sact="delkid" data-i="${i}" aria-label="Fjern">✕</button></div>
+      <div class="small" style="margin:4px 0 2px">Aktivitetskalendere for ${esc(k.name || 'barnet')}</div>
+      ${S.calendars.filter(c => !sch.includes(c.id)).map(c => `<label class="cal"><input type="checkbox" data-kidcal="${esc(c.id)}" ${mine.includes(c.id) ? 'checked' : ''}>
+        <span class="sw" style="background:${esc(c.color)}"></span>${esc(c.name)}</label>`).join('') || '<div class="empty">Ingen kalendere funnet.</div>'}
+      </div>`; }).join('')}
     <button class="btn small" data-sact="addkid">+ Legg til barn</button>
 
     <h3>Kalendere for aktiviteter</h3>
     ${S.calendars.map(c => { const isS = sch.includes(c.id); return `<label class="cal${isS ? ' dis' : ''}"><input type="checkbox" data-cal="${esc(c.id)}" ${!isS && d.activityCals.includes(c.id) ? 'checked' : ''} ${isS ? 'disabled' : ''}>
-      <span class="sw" style="background:${esc(c.color)}"></span>${esc(c.name)}${isS ? ' · skole' : ''}</label>`; }).join('') || `<div class="msg">${esc(S.errors.cal || 'Ingen kalendere funnet.')}</div>`}
+      <span class="sw" style="background:${esc(c.color)}"></span>${esc(c.name)}${isS ? ' · skole' : ''}${!isS && d.kids.some(k => kidCals(k).includes(c.id)) ? ' <span class="muted">· vises alltid hos barnet</span>' : ''}</label>`; }).join('') || `<div class="msg">${esc(S.errors.cal || 'Ingen kalendere funnet.')}</div>`}
 
     <h3>Tjen penger</h3>
     <p class="hint">Oppgaver barna kan krysse av for. Hver oppgave kan gjøres én gang per dag.</p>
@@ -994,6 +1002,9 @@ function readDraft() {
   document.querySelectorAll('[data-kidrow]').forEach(r => {
     const k = draft.kids[+r.dataset.kidrow]; if (!k) return;
     r.querySelectorAll('[data-f]').forEach(el => { k[el.dataset.f] = el.value.trim(); });
+    const boxes = r.querySelectorAll('[data-kidcal]');
+    if (boxes.length) k.cals = [...boxes].filter(b => b.checked).map(b => b.dataset.kidcal);
+    delete k.own;
   });
   document.querySelectorAll('[data-chorerow]').forEach(r => {
     const c = draft.chores[+r.dataset.chorerow]; if (!c) return;
@@ -1033,7 +1044,7 @@ $('sheet').addEventListener('click', async e => {
     return;
   }
   readDraft();
-  if (a === 'addkid') draft.kids.push({ name: '', school: '', own: '' });
+  if (a === 'addkid') draft.kids.push({ name: '', school: '', cals: [] });
   if (a === 'delkid') draft.kids.splice(+b.dataset.i, 1);
   if (a === 'addchore') draft.chores.push({ id: uid(), title: '', price: 10, kids: [] });
   if (a === 'delchore') draft.chores.splice(+b.dataset.i, 1);
@@ -1057,7 +1068,7 @@ $('sheet').addEventListener('keydown', e => {
   const act = map[e.target.id]; if (!act) return;
   e.preventDefault(); const b = $('sheet').querySelector(`[data-sact="${act}"]`); b && b.click();
 });
-$('sheet').addEventListener('change', e => { if (e.target.matches('[data-kidrow] select')) { readDraft(); renderSettings(); } });
+$('sheet').addEventListener('change', e => { if (e.target.matches('[data-kidrow] select, [data-kidcal]')) { readDraft(); renderSettings(); } });
 $('settings').addEventListener('click', e => { if (e.target.id === 'settings') closeSettings(); });
 
 // =================== HENDELSER ===================
