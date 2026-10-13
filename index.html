@@ -591,7 +591,7 @@ async function resolveStop(name) {
 async function getRoute() {
   const r = cfg().route || { from: { name: DEFAULT_ROUTE.from }, to: { name: DEFAULT_ROUTE.to } };
   const [from, to] = await Promise.all([r.from.id ? r.from : resolveStop(r.from.name), r.to.id ? r.to : resolveStop(r.to.name)]);
-  return { from, to };
+  return LS.get('kk.routeRev', false) ? { from: to, to: from } : { from, to };
 }
 async function loadDeps() {
   const rt = await getRoute();
@@ -705,7 +705,8 @@ function weatherCard() {
 }
 function depsCard() {
   const d = S.deps, now = Date.now();
-  const title = d ? `${esc(d.from.replace(/ stasjon$/i, ''))} → ${esc(d.to)}` : 'Tog';
+  const short = n => esc(String(n).replace(/ stasjon$/i, ''));
+  const title = d ? `<span><span class="muted" style="font-weight:400">Fra</span> ${short(d.from)} <span class="muted" style="font-weight:400">til</span> ${short(d.to)}</span>` : '<span>Tog</span>';
   const rows = d ? d.calls.filter(c => c.t.getTime() > now - 30e3).slice(0, 4).map(c => {
     const min = Math.round((c.t - now) / 60e3);
     const when = c.cancelled ? 'Innstilt' : min <= 0 ? 'Nå' : min < 15 ? `${min} min` : fmtT(c.t);
@@ -714,8 +715,11 @@ function depsCard() {
     return `<div class="dep"${c.cancelled ? ' style="opacity:.5;text-decoration:line-through"' : ''}><span class="line" style="background:${MODE_COLOR.rail}">${esc(c.line)}</span>
       <span class="dst">${delay >= 2 ? `<s class="muted">${fmtT(c.aimed)}</s> ` : ''}${fmtT(c.t)}<div class="small">${sub}</div></span><span class="when${c.rt ? ' rt' : ''}">${when}</span></div>`;
   }).join('') : '';
-  return `<section class="card"><div class="ctitle">${title}<span class="muted">Direktetog · Entur</span></div>
-    ${rows || errBox('deps') || (d ? '<div class="empty">Ingen direktetog de neste timene.</div>' : '<div class="empty">Henter avganger …</div>')}</section>`;
+  return `<section class="card"><div class="ctitle">${title}<span style="display:flex;gap:12px">
+      <button class="linkbtn" data-act="routeswap" title="Snu retning" aria-label="Snu retning">⇄ Snu</button>
+      <button class="linkbtn" data-act="routeedit" aria-label="Endre stasjoner">Endre</button></span></div>
+    ${rows || errBox('deps') || (d ? '<div class="empty">Ingen direktetog de neste timene.</div>' : '<div class="empty">Henter avganger …</div>')}
+    <div class="small" style="margin-top:6px">Kun direktetog · Entur</div></section>`;
 }
 function tasksCard() {
   const list = S.tasks.slice(0, 5);
@@ -955,9 +959,11 @@ function renderSettings() {
     <p class="hint">Viser direktetog uten bytte. Standard er Lillestrøm → Oslo S.</p>
     <div class="cur">Fra <b>${esc(d.route ? d.route.from.name : DEFAULT_ROUTE.from)}</b> til <b>${esc(d.route ? d.route.to.name : DEFAULT_ROUTE.to)}</b>
       ${d.route ? '<button type="button" class="linkbtn" data-sact="routereset" style="margin-left:8px">Tilbakestill</button>' : ''}</div>
-    <div class="addrow"><input type="text" id="fromQ" placeholder="Fra stasjon"><button type="button" data-sact="fromsearch">Søk</button></div>
+    <div class="small" style="margin-top:10px">Fra stasjon</div>
+    <div class="addrow" style="margin-top:4px"><input type="text" id="fromQ" placeholder="F.eks. Lillestrøm"><button type="button" data-sact="fromsearch">Søk</button></div>
     <div id="fromRes"></div>
-    <div class="addrow"><input type="text" id="toQ" placeholder="Til stasjon"><button type="button" data-sact="tosearch">Søk</button></div>
+    <div class="small" style="margin-top:10px">Til stasjon</div>
+    <div class="addrow" style="margin-top:4px"><input type="text" id="toQ" placeholder="F.eks. Oslo S"><button type="button" data-sact="tosearch">Søk</button></div>
     <div id="toRes"></div>
 
     <h3>Sted for vær</h3>
@@ -1033,6 +1039,12 @@ $('sheet').addEventListener('click', async e => {
   }
   renderSettings();
 });
+$('sheet').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const map = { fromQ: 'fromsearch', toQ: 'tosearch', placeQ: 'placesearch' };
+  const act = map[e.target.id]; if (!act) return;
+  e.preventDefault(); const b = $('sheet').querySelector(`[data-sact="${act}"]`); b && b.click();
+});
 $('sheet').addEventListener('change', e => { if (e.target.matches('[data-kidrow] select')) { readDraft(); renderSettings(); } });
 $('settings').addEventListener('click', e => { if (e.target.id === 'settings') closeSettings(); });
 
@@ -1045,6 +1057,8 @@ $('view').addEventListener('click', async e => {
   if (!a && t.dataset.kid != null) { S.view = +t.dataset.kid; window.scrollTo(0, 0); return render(); }
   if (a === 'addtoggle') { S.adding = !S.adding; render(); if (S.adding) { const i = document.querySelector('[data-form=task] input'); i && i.focus(); } return; }
   if (a === 'task') return completeTask(t.dataset.id);
+  if (a === 'routeswap') { LS.set('kk.routeRev', !LS.get('kk.routeRev', false)); S.deps = null; render(); loadDeps().catch(e => { S.errors.deps = 'Fikk ikke hentet avganger (' + e.message + ')'; }).then(render); return; }
+  if (a === 'routeedit') { openSettings(); setTimeout(() => { const el = $('fromQ'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); } }, 50); return; }
   if (a && a.startsWith('wk')) {
     const n = a === 'wk0' ? 0 : S.weekOffset + (a === 'wk1' ? 1 : -1);
     S.weekOffset = n;
