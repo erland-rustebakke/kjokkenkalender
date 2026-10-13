@@ -157,6 +157,30 @@ button{cursor:pointer}
 .lesson.now .t{color:var(--accent);font-weight:600}
 .lesson.extra .n{color:var(--muted);font-style:italic}
 .tt-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.wp{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.wp-day{background:var(--solid);border:1px solid var(--line);border-radius:14px;padding:8px 7px;min-height:140px;min-width:0}
+.wp-day.today{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.wp-day.past{opacity:.5}
+.wp-h{display:flex;align-items:baseline;gap:6px;margin:0 2px 8px}
+.wp-h .dn{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.wp-h .dd{font-size:20px;font-weight:700}
+.wp-day.today .dn,.wp-day.today .dd{color:var(--accent)}
+.wp-h .tg{margin-left:auto;font-size:11px;font-weight:600;color:#fff;background:var(--accent);padding:2px 7px;border-radius:999px}
+.wp-school{border-left:4px solid var(--kc);background:var(--bg1);border-radius:8px;padding:6px 7px;margin-bottom:6px}
+.wp-ls{margin-top:4px}
+.wp-ls div{font-size:12px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wp-ls span{color:var(--muted);font-variant-numeric:tabular-nums;margin-right:5px}
+.wp-ls .now{color:var(--accent);font-weight:600}
+.wp-ls .extra{color:var(--muted);font-style:italic}
+.wp-ev{border-left:4px solid var(--c);background:var(--card);border-radius:8px;padding:6px 7px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.wp-ev.now{outline:2px solid var(--accent)}
+.wp-a{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wp-school .wp-a{color:var(--text)}
+.wp-b{font-size:14px;font-weight:600;line-height:1.25;overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto}
+.wp-c{font-size:11.5px;color:var(--muted);overflow-wrap:break-word;hyphens:auto}
+.wp-rem{font-size:12px;font-weight:600;color:var(--warn);background:rgba(217,119,6,.1);border-radius:6px;padding:4px 6px;margin-bottom:6px}
+.wp-pill{font-size:12px;color:#fff;border-radius:6px;padding:3px 6px;margin-bottom:6px}
+.wp-free{font-size:13px;color:var(--muted);padding:2px}
 .tt-col h4{margin:0 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .tt-col.today h4{color:var(--accent)}
 .tt-l{background:var(--solid);border:1px solid var(--line);border-left:4px solid var(--kc);border-radius:8px;padding:5px 7px;margin-bottom:5px}
@@ -201,11 +225,17 @@ button{cursor:pointer}
 .banner{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--text);color:var(--solid);padding:10px 14px;border-radius:12px;display:flex;gap:12px;align-items:center;z-index:9;font-size:15px}
 .banner button{background:var(--solid);color:var(--text);border:0;border-radius:8px;padding:7px 11px;font-weight:600}
 
+@media (max-width:1000px) and (min-width:761px){
+  .wp{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
 @media (max-width:760px){
   .wrap{padding:12px 14px 104px}
   .grid2{grid-template-columns:1fr}
   .top .clock{font-size:28px}
   .tt-grid{grid-template-columns:1fr}
+  .wp{grid-template-columns:1fr}
+  .wp-day{min-height:0}
+  .wp-day.past{display:none}
   .frow.kid,.frow.chorer{grid-template-columns:1fr 1fr}
   .frow button.x{grid-column:2}
   .nav button{padding:6px}
@@ -842,25 +872,33 @@ function renderKid(i, now) {
       schoolHTML = `<div class="ctitle">Skoledag · ${esc(dayLabel(day))}</div>` + schoolHTML;
     } else schoolHTML = '<div class="ctitle">Skoledag</div><div class="empty">Ingen skoletimer registrert den neste uken.</div>';
   }
-  // ukens timeplan
-  let ttHTML = '';
-  if (k.school) {
-    const mon = now.getDay() === 6 || now.getDay() === 0 ? addDays(monday(now), 7) : monday(now);
-    ttHTML = `<section class="card" style="margin-top:14px"><div class="ctitle">Timeplan uke ${isoWeek(mon)}</div><div class="tt-grid">` +
-      [0, 1, 2, 3, 4].map(n => {
-        const d = addDays(mon, n), sd = schoolDay(k, d);
-        return `<div class="tt-col${sameDay(d, now) ? ' today' : ''}"><h4>${esc(d.toLocaleDateString('nb-NO', { weekday: 'short', day: 'numeric' }))}</h4>` +
-          (sd.evs.map(e => `<div class="tt-l" style="--kc:${esc(color)}"><div class="a">${e.allDay ? 'Hele dagen' : fmtT(e.start) + '–' + fmtT(e.end)}</div><div class="b">${esc(e.title)}</div></div>`).join('') || '<div class="empty">Fri</div>') + '</div>';
-      }).join('') + '</div></section>';
-  }
-  // aktiviteter neste 14 dager
-  const acts = S.events.filter(e => e.kind === 'act' && kidMatch(k, e) && e.end > now && e.start < addDays(sod(now), 14)).sort((a, b) => a.start - b.start);
-  let lastDay = '';
-  const actHTML = acts.map(e => {
-    const dl = dayLabel(e.start) + ' ' + e.start.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' });
-    const h = dl !== lastDay ? `<div class="dayh">${esc(dl)}</div>` : ''; lastDay = dl;
-    return h + evRow(e, sod(e.start), now);
-  }).join('') || '<div class="empty">Ingen aktiviteter de neste to ukene.</div>';
+  // ukeplan: skole + aktiviteter + husk, mandag–søndag
+  const mon = addDays(monday(now), (S.kidWeek || 0) * 7);
+  const sun = addDays(mon, 6);
+  const fmtD = d => d.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' });
+  const days = [...Array(7)].map((_, n) => {
+    const d = addDays(mon, n), isToday = sameDay(d, now), past = d < sod(now);
+    const sd = k.school ? schoolDay(k, d) : { evs: [], timed: [], allDay: [] };
+    const acts = eventsOn(d, e => e.kind === 'act' && kidMatch(k, e));
+    const due = S.tasks.filter(t => t.due === dkey(d) && t.title.toLowerCase().startsWith(k.name.toLowerCase() + ':'));
+    let h = due.map(t => `<div class="wp-rem">Husk: ${esc(t.title.slice(k.name.length + 1).trim())}</div>`).join('');
+    h += sd.allDay.map(e => `<div class="wp-pill" style="background:${esc(e.color)}">${esc(e.title)}</div>`).join('');
+    if (sd.timed.length) {
+      const cur = isToday ? sd.timed.find(e => e.start <= now && e.end > now) : null;
+      h += `<div class="wp-school" style="--kc:${esc(color)}"><div class="wp-a"><b>Skole</b> <span style="white-space:nowrap">${fmtT(sd.first)}–${fmtT(sd.last)}</span></div>
+        <div class="wp-ls">${sd.timed.map(e => `<div class="${e === cur ? 'now' : ''}${EXTRA_RE.test(e.title) ? ' extra' : ''}"><span>${fmtT(e.start)}</span>${esc(e.title)}</div>`).join('')}</div></div>`;
+    }
+    h += acts.map(e => {
+      const t = e.allDay ? 'Hele dagen' : (e.start < d ? 'til ' + fmtT(e.end) : fmtT(e.start) + (e.end <= addDays(d, 1) && e.end > e.start ? '–' + fmtT(e.end) : ''));
+      const nowCls = !e.allDay && e.start <= now && e.end > now ? ' now' : '';
+      return `<div class="wp-ev${nowCls}" style="--c:${esc(e.color)}"><div class="wp-a">${esc(t)}</div><div class="wp-b">${esc(e.title)}</div>${e.loc ? `<div class="wp-c">${esc(e.loc)}</div>` : ''}</div>`;
+    }).join('');
+    if (!h) h = '<div class="wp-free">Fri</div>';
+    return `<div class="wp-day${isToday ? ' today' : ''}${past ? ' past' : ''}"><div class="wp-h"><span class="dn">${esc(d.toLocaleDateString('nb-NO', { weekday: 'short' }).replace('.', ''))}</span><span class="dd">${d.getDate()}</span>${isToday ? '<span class="tg">I dag</span>' : ''}</div>${h}</div>`;
+  }).join('');
+  const weekHTML = `<section class="card"><div class="wkhead"><h2>Ukeplan <span class="muted" style="font-size:14px;font-weight:400">uke ${isoWeek(mon)} · ${fmtD(mon)}–${fmtD(sun)}</span></h2>
+    <div class="wknav"><button data-act="kw-1" aria-label="Forrige uke">‹</button><button data-act="kw0" style="font-size:13px;width:auto;padding:0 8px">Denne uken</button><button data-act="kw1" aria-label="Neste uke">›</button></div></div>
+    <div class="wp">${days}</div></section>`;
   // tjen penger
   const chores = choresFor(k.name);
   const choreHTML = chores.map(c => {
@@ -879,8 +917,7 @@ function renderKid(i, now) {
       <section class="card"><div class="ctitle">Tjen penger<span class="muted">Kryss av når du er ferdig</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
     </div>
     ${myTasks.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${myTasks.map(taskRow).join('')}</section>` : ''}
-    <section class="card"><div class="ctitle">Aktiviteter de neste to ukene</div>${actHTML}</section>
-    ${ttHTML}`;
+    ${weekHTML}`;
 }
 
 // ---------- Hovedrender ----------
@@ -1077,11 +1114,12 @@ $('view').addEventListener('click', async e => {
   if (t.dataset.chip) { S.chip = t.dataset.chip; return render(); }
   if (t.dataset.day) { S.selDay = parseDate(t.dataset.day); return render(); }
   const a = t.dataset.act;
-  if (!a && t.dataset.kid != null) { S.view = +t.dataset.kid; window.scrollTo(0, 0); return render(); }
+  if (!a && t.dataset.kid != null) { S.view = +t.dataset.kid; S.kidWeek = 0; window.scrollTo(0, 0); return render(); }
   if (a === 'addtoggle') { S.adding = !S.adding; render(); if (S.adding) { const i = document.querySelector('[data-form=task] input'); i && i.focus(); } return; }
   if (a === 'task') return completeTask(t.dataset.id);
   if (a === 'routeswap') { LS.set('kk.routeRev', !LS.get('kk.routeRev', false)); S.deps = null; render(); loadDeps().catch(e => { S.errors.deps = 'Fikk ikke hentet avganger (' + e.message + ')'; }).then(render); return; }
   if (a === 'routeedit') { openSettings(); setTimeout(() => { const el = $('fromQ'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); } }, 50); return; }
+  if (a && a.startsWith('kw')) { S.kidWeek = a === 'kw0' ? 0 : (S.kidWeek || 0) + (a === 'kw1' ? 1 : -1); S.kidWeek = Math.max(-1, Math.min(2, S.kidWeek)); return render(); }
   if (a && a.startsWith('wk')) {
     const n = a === 'wk0' ? 0 : S.weekOffset + (a === 'wk1' ? 1 : -1);
     S.weekOffset = n;
@@ -1106,7 +1144,7 @@ $('view').addEventListener('submit', e => {
 });
 $('nav').addEventListener('click', e => {
   const b = e.target.closest('[data-nav]'); if (!b) return;
-  S.view = b.dataset.nav === 'home' ? 'home' : +b.dataset.nav; window.scrollTo(0, 0); render();
+  S.view = b.dataset.nav === 'home' ? 'home' : +b.dataset.nav; S.kidWeek = 0; window.scrollTo(0, 0); render();
 });
 $('settingsBtn').onclick = openSettings;
 $('refreshBtn').onclick = () => syncAll(true);
