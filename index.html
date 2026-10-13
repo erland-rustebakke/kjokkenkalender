@@ -225,6 +225,9 @@ button{cursor:pointer}
 .results button:first-child{border-top:0}
 .cur{font-size:14px;margin:6px 0 0}
 .payrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.dinner-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.dinner-tip{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;text-decoration:none;color:inherit}
+.dinner-tip img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;background:var(--bg1)}
 .who{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
 
 .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--text);color:var(--solid);padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;max-width:90vw}
@@ -332,7 +335,8 @@ const LS = {
 const DEFAULT_SHARED = () => ({
   v: 2,
   cfg: { kids: [], activityCals: null, stop: null, route: null, place: { name: 'Lillestrøm', lat: 59.956, lon: 11.050 }, taskList: '' },
-  chores: [], log: [], payouts: []
+  chores: [], log: [], payouts: [],
+  pantry: { imports: [], used: [] }, lunchbox: []
 });
 
 const S = {
@@ -345,6 +349,7 @@ const S = {
   calendars: [], events: [], taskLists: [], tasks: [], taskListId: null,
   weather: null, deps: null,
   view: 'home', selDay: null, weekOffset: 0, chip: 'all', adding: false,
+  dinnerTips: null, dinnerLoading: false,
   errors: {}, lastSync: null
 };
 
@@ -453,6 +458,10 @@ function normShared(d) {
   d.chores = Array.isArray(d.chores) ? d.chores : [];
   d.log = Array.isArray(d.log) ? d.log : [];
   d.payouts = Array.isArray(d.payouts) ? d.payouts : [];
+  d.pantry = d.pantry && typeof d.pantry === 'object' ? d.pantry : {};
+  d.pantry.imports = Array.isArray(d.pantry.imports) ? d.pantry.imports : [];
+  d.pantry.used = Array.isArray(d.pantry.used) ? d.pantry.used : [];
+  d.lunchbox = Array.isArray(d.lunchbox) ? d.lunchbox : [];
   // migrer fra eldre versjon (lokale innstillinger)
   if (!d.cfg.kids.length) {
     const old = LS.get('kk.kids', null);
@@ -520,6 +529,95 @@ const Store = {
 const cfg = () => S.shared.cfg;
 const kids = () => cfg().kids.filter(k => k.name);
 const kidCals = k => [...new Set([...(k.cals || []), k.own].filter(Boolean))];
+
+// =================== MAT (Oda) ===================
+const NB_MONTHS = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+// Linjer av typen: "1  stk. Varenavn ...   MVA 15%   49,20 NOK" (negative antall er returer/korrigeringer og hoppes over)
+const ODA_ITEM_RE = /^(-?\d+)\s+stk\.?\s+(.+?)\s{2,}(?:Vektvare\s[\d.,]+\s*kg\s+)?MVA\s\d+%\s+-?[\d.,]+\s*NOK\s*$/gm;
+
+function parseOdaReceipt(text) {
+  const items = [];
+  let m; ODA_ITEM_RE.lastIndex = 0;
+  while ((m = ODA_ITEM_RE.exec(text))) {
+    const qty = +m[1];
+    if (qty <= 0) continue;
+    items.push({ id: uid(), name: m[2].trim().replace(/,$/, ''), qty });
+  }
+  let date = dkey(new Date());
+  const dateM = text.match(/Dato:\s*(\d{1,2})\.\s*(\w+)\s*(\d{4})/i);
+  if (dateM) {
+    const mo = NB_MONTHS.indexOf(dateM[2].toLowerCase());
+    if (mo >= 0) date = `${dateM[3]}-${String(mo + 1).padStart(2, '0')}-${String(+dateM[1]).padStart(2, '0')}`;
+  }
+  return { id: uid(), date, items };
+}
+
+const PANTRY_CATS = [
+  ['Kjøtt & fisk', /kylling|karbonade|kjøttdeig|skinke|bacon|salami|porchetta|burger|torsk|sei\b|laks|fiskekak|hamburgerrygg|kebab|lårbiff|filet/i],
+  ['Meieri', /melk|yoghurt|yoplait|kvarg|rømme|smør|\bost\b|norvegia|jarlsberg|manchego|brie|mozzarella|babybel|\begg\b|frokostegg/i],
+  ['Frukt & grønt', /gulrot|agurk|paprika|løk|potet|søtpotet|fennikel|ruccola|basilikum|koriander|oregano|rosmarin|hvitløk|eple|banan|appelsin|kiwi|mango|sitron|bringebær|blåbær|bjørnebær|jordbær|drue|fiken|dadler|avokado|mais|tranebær/i],
+  ['Brød & bakst', /brød|rundstykk|lomper|møllehjul|bakeark|tortilla/i],
+  ['Tørrvarer', /\bmel\b|sukker|\bris\b|noodles|havregryn|chiafrø|gresskarkjerner|valnøtt|cashew|peanøtt|tunfisk|saus\b|eddik|\bsalt\b|gjær/i],
+  ['Snacks & drikke', /potetgull|chips|smoothie|froosh|juice|cola|pepsi|farris|urge|kaffe|snackoliven|maiskaker|crunchy bites|munkholm/i]
+];
+function pantryCategory(name) { for (const [cat, re] of PANTRY_CATS) if (re.test(name)) return cat; return 'Annet'; }
+const LUNCHBOX_RE = /smoothie|froosh|gulrot|agurk|knekkebrød|wasa|babybel|mozzarella|mandarin|appelsin|eple|banan|drue|snackoliven|müslibar|maiskaker|tørket|tranebær/i;
+
+function activePantryItems() {
+  const d = S.shared.pantry;
+  const recent = [...d.imports].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 2);
+  const used = new Set(d.used);
+  const byName = new Map();
+  recent.forEach(imp => imp.items.forEach(it => { if (!used.has(it.id)) byName.set(it.name, it); }));
+  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name, 'nb'));
+}
+async function importOdaReceipt(text) {
+  const parsed = parseOdaReceipt(text);
+  if (!parsed.items.length) throw new Error('Fant ingen varelinjer. Lim inn hele "Bestilte varer"-listen fra Oda-kvitteringen.');
+  await Store.mutate(d => { d.pantry.imports.push(parsed); d.pantry.imports = d.pantry.imports.slice(-8); });
+  return parsed;
+}
+
+// Enkel oversettelse NO -> engelske ingrediens-slugs TheMealDB bruker
+const DINNER_MAP = [
+  ['kyllingfilet', 'chicken_breast'], ['lårbiff av kylling', 'chicken_thighs'], ['kylling', 'chicken'],
+  ['karbonadedeig', 'ground_beef'], ['kjøttdeig', 'ground_beef'], ['laks', 'salmon'], ['torsk', 'cod'],
+  ['skinke', 'ham'], ['bacon', 'bacon'], ['søtpotet', 'sweet_potato'], ['potet', 'potatoes'],
+  ['gulrot', 'carrots'], ['paprika', 'bell_pepper'], ['løk', 'onions'], ['noodles', 'noodles'],
+  ['ost', 'cheese'], ['agurk', 'cucumber']
+];
+function dinnerIngredientsFromPantry() {
+  const names = activePantryItems().map(i => i.name.toLowerCase());
+  const found = [];
+  DINNER_MAP.forEach(([no, en]) => { if (!found.includes(en) && names.some(n => n.includes(no))) found.push(en); });
+  return found.slice(0, 4);
+}
+async function fetchDinnerTips() {
+  const ings = dinnerIngredientsFromPantry();
+  if (!ings.length) return [];
+  const lists = await Promise.all(ings.map(i =>
+    fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(i)}`)
+      .then(r => r.json()).then(d => d.meals || []).catch(() => [])));
+  const score = new Map(), byId = new Map();
+  lists.forEach(l => l.forEach(m => { score.set(m.idMeal, (score.get(m.idMeal) || 0) + 1); byId.set(m.idMeal, m); }));
+  return [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => byId.get(id));
+}
+
+// Startdata: de siste Oda-kvitteringene (importeres automatisk første gang appen åpnes)
+const SEED_ODA_IMPORTS = [
+  { date: '2026-08-13', items: ['Cheerios Multigrain frokostblanding', 'Alpro Usøtet mandeldrikk', 'Kolonihagen Økologiske chiafrø', 'Hatting Grove Fullkornsstykker', 'Hatting Grove Rundstykker', 'Blåbær i kurv', 'Norske jordbær', 'Friele Frokostkaffe Filtermalt', 'Gilde Smårettskinke strimlet', 'Q yoghurt jordbær og lime', 'Knoll Småpoteter', 'KiMs Salt crunch potetgull', 'Ytterøy Kyllingfilet naturell', 'Dansukker Sukker', 'Olw Cheez Doodles', 'R Mangoterninger Ferskfryste', 'Kolonihagen Økologiske gresskarkjerner', 'Coca-Cola Zero Sugar', 'Q Melk Lett', 'Agurk Norge', 'TINE Premium Appelsinjuice', 'Gilde Hamburgerrygg', 'Stor Spisspaprika Rød', 'Old El Paso Tortillachips Cheese', 'Grilstad Spekeskinke', 'Prior Frokostegg', 'R Avokadoterninger Ferskfryste', 'Q-lettrømme', 'R Maiskorn', 'TINE Norvegia Original', 'Gul Kiwi', 'Gaea Grønne snackoliven', 'Valgrande Fersk mozzarella', 'Old El Paso Tortillas Hvete Large', 'Prima Lavpris Tunfisk i vann', 'TINE Ekte meierismør', 'Strøm-Larsen Karbonadedeig', 'Farris Frus bringebær', 'Sørlandskjøtt Krydderskinke', 'Barilla Farfalle', 'Gulrot i bunt', 'Froosh smoothie Peach paradise', 'Wasa Crunchy Bites Sour Cream & Onion', 'Hatting Fullkorns Møllehjul'] },
+  { date: '2026-08-20', items: ['Apetina marinert Herbs & Spices', 'Grilstad Jubelsalami', 'Stabburet Stabbur-Makrell', 'Prima Lavpris Tunfisk i vann', 'R Valnøttkjerner', 'R Kokosmasse', 'Ferske dadler', 'Ola Lompa Store lomper', 'Korn Bakeri Flerkorn brytebrød', 'Agurk Norge', 'Q Melk Lett', 'TINE Premium Appelsinjuice', 'Gilde Hamburgerrygg', 'Blåbær i kurv', 'Grilstad Spekeskinke', 'Stor Spisspaprika Rød', 'Korn Bakeri Steinovnsbakt grovbrød', 'Hatting Fullkorns Møllehjul', 'Old El Paso Tortillachips Cheese', 'Bjørnebær', 'Q yoghurt jordbær og lime', 'Prior Frokostegg', 'Yoplait KVARG Jordbær', 'Gilde Smårettskinke strimlet', 'Farris Frus bringebær', 'Old El Paso Tortillas Hvete Large', 'KiMs Salt crunch potetgull', 'Nugatti Max', 'Farris Frus eple & kiwi', 'Bringebær', 'Synnøve Gresk yoghurt Naturell', 'Synnøve Gresk gourmetyoghurt Kremet', 'Norgesmøllene Hvetemel Siktet', 'Gaea Grønne snackoliven', 'Cheerios Multigrain frokostblanding', 'Sørlandskjøtt Krydderskinke', 'Kolonihagen Økologiske chiafrø', 'Stor Paprika Rød', 'TINE Jarlsberg', 'Ferske Bringebær', 'Urkraft Lettkokte Havregryn', 'Kikkoman Soyasaus', 'Wasa Crunchy Bites Sour Cream & Onion', 'Mini Babybel Babybel Mini', 'Synnøve Matpakkesnurrer Ost og tomat', 'Friggs Maiskaker med ostesmak'] },
+  { date: '2026-09-06', items: ['Kanda Kebab av storfekjøtt', 'Isbergsalat', 'Stor Spisspaprika Rød', 'Ekstra Stor Mango', 'Stor Søtpotet', 'Q Melk Lett', 'TINE Premium Appelsinjuice', 'Grilstad Spekeskinke', 'Prior Frokostegg', 'Q yoghurt jordbær og lime', 'Korn Bakeri Steinovnsbakt grovbrød', 'Hatting Fullkorns Møllehjul', 'Bjørnebær', 'Yoplait KVARG Jordbær', 'TINE Norvegia Original', 'R Avokadoterninger Ferskfryste', 'R Maiskorn', 'Strøm-Larsen Karbonadedeig', 'Cheerios Multigrain frokostblanding', 'Friggs Maiskaker med ostesmak', 'R Cashewnøtter', 'Norgesmøllene Hvetemel Siktet', 'Wasa Crunchy Bites Sour Cream & Onion', 'Bringebær', 'Synnøve Gresk yoghurt Naturell', 'Urkraft Lettkokte Havregryn', 'R Valnøttkjerner', 'R Pizza- og bakeark', 'Froosh Smoothie Strawbana swirl', 'Old El Paso Tortillas original', 'TINE Ekte revet ost Økonomipakke', 'Old El Paso Tortillachips Cheese', 'Gaea Grønne snackoliven', 'Farris Frus bringebær', 'Friele Frokostkaffe Filtermalt', 'Ola Lompa Store lomper', 'Synnøve Gresk gourmetyoghurt Kremet', 'Ytterøy Lårbiff av kylling', 'Maarud Luftige Hjerter Salt', 'Ringnes Munkholm Radler Mango & Passion', 'Agurk Norge', 'Blue Dragon Satay Wok', 'Polly Peanøtter', 'Fersk Koriander', 'Rødløk Strømpe', 'Santa Maria Rice Noodles', 'Ytterøy Kyllingfilet Chunks Saktevoksende'] },
+  { date: '2026-09-16', items: ['TINE Østavind', 'Toro Kanel Malt', 'Strøm-Larsen Fersk porchetta Rå', 'Fiken Tyrkia', 'Fersk basilikum', 'Hardanger Epler Discovery', 'Fersk Oregano', 'Hvitløk', 'Fersk Koriander', 'Sitroner', 'Fennikel', 'Store Appelsiner', 'R Valnøttkjerner', 'Tranebær Tørket', 'Ruccola vasket', 'Fersk Gressløk', 'Fersk Rosmarin', 'Diplom-is Royal vanilje', 'Grilstad Kjøttdeig av storfe', 'Wiig Gartneri Ekstra søte piccolo cherry', 'Q Melk Lett', 'TINE Premium Appelsinjuice', 'Grilstad Spekeskinke', 'Agurk Norge', 'Prior Frokostegg', 'Korn Bakeri Steinovnsbakt grovbrød', 'Yoplait KVARG Jordbær', 'Wasa Crunchy Bites Sour Cream & Onion', 'Prima Lavpris Tunfisk i vann', 'Old El Paso Tortillas Hvete Large', 'Bananer i Klase', 'Maarud Luftige Hjerter Salt', 'KiMs Salt crunch potetgull', 'Ola Lompa Store lomper', 'Stor Søtpotet', 'R Pizza- og bakeark', 'Kolonihagen Økologiske gresskarkjerner', 'Toro Oregano', 'Synnøve Gresk yoghurt', 'Grilstad Jubelsalami', 'Apetina marinert Herbs & Spices', 'Gulrøtter vasket', 'Kims Potetgull sour cream & onion', 'Blue Dragon Satay Wok', 'Ytterøy Kyllingfilet Chunks Saktevoksende', 'Touch of Taste Kyllingfond', 'Bjørnebær'] },
+  { date: '2026-09-24', items: ['Tine Dovre norsk brie', 'Elephant Sea salt pretzels', 'Q Melk Lett', 'Agurk Norge', 'Hatting Fullkorns Møllehjul', 'Old El Paso Tortillachips Cheese', 'Grilstad Spekeskinke', 'Korn Bakeri Steinovnsbakt grovbrød', 'Old El Paso Tortillas Hvete Large', 'Bjørnebær', 'Prima Lavpris Tunfisk i vann', 'Yoplait KVARG Jordbær', 'TINE Norvegia Original', 'Blåbær i kurv', 'Farris Frus bringebær', 'Cheerios Multigrain frokostblanding', 'Friele Frokostkaffe Filtermalt', 'Friggs Maiskaker med ostesmak', 'R Maiskorn', 'Gaea Grønne snackoliven', 'Synnøve Gresk yoghurt Naturell', 'Gilde Smårettskinke strimlet', 'Wasa Crunchy Bites Sour Cream & Onion', 'R Valnøttkjerner', 'Q-lettrømme', 'R Cashewnøtter', 'Grilstad Jubelsalami', 'R Avokadoterninger Ferskfryste', 'Wiig Gartneri Ekstra søte piccolo cherry', 'Bringebær', 'Gilde Ostegrill', 'Farris Frus eple & kiwi', 'Gul Kiwi', 'Rødløk Strømpe', 'Stor Paprika Rød', 'Kolonihagen Økologiske gresskarkjerner', 'Strøm-Larsen Karbonadedeig', 'Kolonihagen Økologiske chiafrø', 'TINE Østavind', 'Ytterøy Lårbiff av kylling', 'Sørlandskjøtt Krydderskinke', 'TINE Revet ost Original', 'Ferske dadler', 'Lofoten Burger av torsk og sei', 'Hatting Gourmet Klassisk hamburgerbrød', 'Toro Paprika Malt', 'Gulrøtter vasket', "Old El Paso Salsa Thick'n Chunky Hot", 'Blue Dragon Indonesian Satay curry sauce'] },
+  { date: '2026-10-07', items: ['Q Melk Lett', 'Agurk Norge', 'Grilstad Spekeskinke', 'Korn Bakeri Steinovnsbakt grovbrød', 'Bjørnebær', 'Hatting Fullkorns Møllehjul', 'TINE Premium Appelsinjuice', 'Prima Lavpris Tunfisk i vann', 'Wasa Crunchy Bites Sour Cream & Onion', 'Prior Frokostegg', 'Old El Paso Tortillas Hvete Large', 'Old El Paso Tortillachips Cheese', 'TINE Norvegia Original', 'Cheerios Multigrain frokostblanding', 'Stor Spisspaprika Rød', 'Gilde Smårettskinke strimlet', 'R Maiskorn', 'Grilstad Jubelsalami', 'R Cashewnøtter', 'Q-lettrømme', 'Gilde Hamburgerrygg', 'R Avokadoterninger Ferskfryste', 'Bananer i Klase', 'TINE Østavind', 'Strøm-Larsen Karbonadedeig', 'Gulrøtter vasket', 'Kolonihagen Økologiske gresskarkjerner', 'Nugatti Original', 'Ola Lompa Store lomper', 'Ytterøy Kyllingfilet naturell', 'Sørlandskjøtt Krydderskinke', 'Diplom-is Fruitero mango mini', 'Dansukker Sukker', 'TINE Ekte meierismør', 'Pepsi Max', 'Coca-Cola Zero Sugar', 'Lesgards Marmelade til brie', 'Rocinante Manchego', 'Fine Cheese Minitoast m/Kirsebær', 'Bakepotet', 'Synnøve Gresk yoghurt Naturell', 'Pink Lady Epler'] }
+];
+async function seedOdaImportsIfEmpty() {
+  if (S.shared.pantry.imports.length) return;
+  await Store.mutate(d => {
+    d.pantry.imports = SEED_ODA_IMPORTS.map(s => ({ id: uid(), date: s.date, items: s.items.map(n => ({ id: uid(), name: n, qty: 1 })) }));
+  });
+}
 
 // =================== KALENDER ===================
 async function loadCalendars() {
@@ -676,6 +774,7 @@ async function syncAll(full) {
   if (syncing || !tokenValid()) return;
   syncing = true;
   await Store.refresh();   // innstillingene må være lest før resten hentes
+  if (!S.shared.pantry.imports.length) await seedOdaImportsIfEmpty().catch(() => {});
   const jobs = [
     (async () => { if (full || !S.calendars.length) await loadCalendars(); await loadEvents(); delete S.errors.cal; })().catch(e => { if (e.message !== 'auth') S.errors.cal = e.message; }),
     loadTasks().catch(e => { if (e.message !== 'auth') S.errors.tasks = e.message; }),
@@ -854,6 +953,46 @@ function renderHome(now) {
   return `<div class="grid2">${weatherCard()}${depsCard()}${tasksCard()}${highlightCard()}</div>${chipsHTML()}${weekCard(now)}`;
 }
 
+// ---------- Mat ----------
+function pantryRow(it) {
+  return `<div class="task"><button class="chk" data-act="pantryused" data-id="${esc(it.id)}" aria-label="Brukt opp"></button><div><div class="tt">${esc(it.name)}</div></div></div>`;
+}
+function pantryCard() {
+  const items = activePantryItems();
+  const groups = {};
+  items.forEach(it => { const c = pantryCategory(it.name); (groups[c] = groups[c] || []).push(it); });
+  const order = ['Kjøtt & fisk', 'Meieri', 'Frukt & grønt', 'Brød & bakst', 'Tørrvarer', 'Snacks & drikke', 'Annet'];
+  const body = order.filter(c => groups[c]).map(c => `<div class="small" style="margin:10px 0 2px">${esc(c)}</div>${groups[c].map(pantryRow).join('')}`).join('');
+  return `<section class="card"><div class="ctitle">Hva vi har nå<span class="muted">Fra siste handel(er) på Oda</span></div>${items.length ? body : '<div class="empty">Ingen varer importert ennå. Lim inn en kvittering under.</div>'}</section>`;
+}
+function importCard() {
+  return `<section class="card"><div class="ctitle">Importer Oda-kvittering</div>
+    <div class="small" style="margin-bottom:8px">Lim inn teksten fra "Bestilte varer" i kvitteringsmailen fra Oda.</div>
+    <form data-form="odaimport"><textarea name="t" rows="4" placeholder="1 stk. Kyllingfilet ...   MVA 15%   139,90 NOK" style="width:100%;border-radius:12px;border:1px solid var(--line);background:var(--bg1);padding:10px;font:inherit;color:inherit;resize:vertical"></textarea>
+    <button class="btn primary" style="margin-top:8px">Importer</button></form>${errBox('odaimport')}</section>`;
+}
+function dinnerCard() {
+  const tips = S.dinnerTips;
+  let body;
+  if (S.dinnerLoading) body = '<div class="empty">Finner middagstips …</div>';
+  else if (!tips) body = '<div class="empty">Trykk for å få forslag basert på det vi har kjøpt sist.</div>';
+  else if (!tips.length) body = '<div class="empty">Fant ingen gode treff akkurat nå.</div>';
+  else body = `<div class="dinner-grid">${tips.map(t => `<a class="dinner-tip" href="https://www.themealdb.com/meal/${esc(t.idMeal)}" target="_blank" rel="noopener"><img src="${esc(t.strMealThumb)}/small" alt="" loading="lazy">${esc(t.strMeal)}</a>`).join('')}</div>`;
+  return `<section class="card"><div class="ctitle">Middagstips<button class="linkbtn" data-act="dinnertips">${tips ? 'Oppdater' : 'Finn middagstips'}</button></div>${body}${errBox('dinner')}
+    <div class="small" style="margin-top:8px">Forslag fra TheMealDB, basert på det du har bestilt sist.</div></section>`;
+}
+function renderMat() {
+  return `<div class="grid2">${pantryCard()}${dinnerCard()}</div>${importCard()}`;
+}
+function lunchboxCard(k, i) {
+  const items = activePantryItems().filter(it => LUNCHBOX_RE.test(it.name));
+  const today = dkey(new Date());
+  const packed = S.shared.lunchbox.some(l => l.kid === k.name && l.date === today);
+  return `<section class="card"><div class="ctitle">Matpakketips</div>
+    ${items.length ? items.map(it => `<span class="pill" style="background:${esc(kidColor(k, i))}">${esc(it.name)}</span>`).join('') : '<div class="empty">Ingen matpakke-varer i siste handel.</div>'}
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:15px"><input type="checkbox" data-act="lunchbox" data-kid="${esc(k.name)}" ${packed ? 'checked' : ''}> Pakket i dag</label></section>`;
+}
+
 // ---------- Barneside ----------
 function balance(name) {
   const d = S.shared;
@@ -931,6 +1070,7 @@ function renderKid(i, now) {
       <section class="card"><div class="ctitle">Tjen penger<span class="muted">Kryss av når du er ferdig</span></div>${choreHTML}${hist ? `<div class="hist">${hist}</div>` : ''}${errBox('store')}</section>
     </div>
     ${myTasks.length ? `<section class="card" style="margin-bottom:14px"><div class="ctitle">Husk</div>${myTasks.map(taskRow).join('')}</section>` : ''}
+    <div style="margin-bottom:14px">${lunchboxCard(k, i)}</div>
     ${weekHTML}
     ${ttHTML}`;
 }
@@ -942,11 +1082,12 @@ function render() {
   const active = document.activeElement;
   if (active && active.closest && active.closest('#view form')) return;  // ikke forstyrr mens man skriver
   const y = window.scrollY;
-  $('view').innerHTML = S.view === 'home' ? renderHome(now) : renderKid(+S.view, now);
+  $('view').innerHTML = S.view === 'home' ? renderHome(now) : S.view === 'mat' ? renderMat() : renderKid(+S.view, now);
   window.scrollTo(0, y);
   // bunnmeny
   $('nav').innerHTML = `<button class="home${S.view === 'home' ? ' on' : ''}" data-nav="home">Hjem</button>` +
-    kids().map((k, i) => `<button class="${String(S.view) === String(i) ? 'on' : ''}" data-nav="${i}">${avatar(k, i)}<span class="nm">${esc(k.name)}</span><span class="bal">${nok(balance(k.name))}</span></button>`).join('');
+    kids().map((k, i) => `<button class="${String(S.view) === String(i) ? 'on' : ''}" data-nav="${i}">${avatar(k, i)}<span class="nm">${esc(k.name)}</span><span class="bal">${nok(balance(k.name))}</span></button>`).join('') +
+    `<button class="home${S.view === 'mat' ? ' on' : ''}" data-nav="mat">Mat</button>`;
   const errs = Object.values(S.errors);
   $('syncDot').className = 'syncdot' + (errs.length ? ' warn' : '');
   $('syncDot').title = errs.length ? errs.join('\n') : S.lastSync ? 'Synket ' + fmtT(S.lastSync) : '';
@@ -1152,14 +1293,37 @@ $('view').addEventListener('click', async e => {
       else d.log.push({ id: uid(), kid: k.name, chore: c.id, title: c.title, amount: +c.price || 0, date: today, ts: Date.now() });
     });
   }
+  if (a === 'pantryused') { return Store.mutate(d => { if (!d.pantry.used.includes(t.dataset.id)) d.pantry.used.push(t.dataset.id); }); }
+  if (a === 'lunchbox') {
+    const name = t.dataset.kid, today2 = dkey(new Date()), checked = t.checked;
+    return Store.mutate(d => {
+      const i = d.lunchbox.findIndex(l => l.kid === name && l.date === today2);
+      if (checked) { if (i < 0) d.lunchbox.push({ kid: name, date: today2 }); }
+      else if (i >= 0) d.lunchbox.splice(i, 1);
+    });
+  }
+  if (a === 'dinnertips') {
+    S.dinnerLoading = true; render();
+    try { S.dinnerTips = await fetchDinnerTips(); delete S.errors.dinner; }
+    catch (e) { S.errors.dinner = 'Fikk ikke hentet middagstips (' + e.message + ')'; S.dinnerTips = []; }
+    S.dinnerLoading = false; render();
+    return;
+  }
 });
 $('view').addEventListener('submit', e => {
-  const f = e.target.closest('[data-form=task]'); if (!f) return;
-  e.preventDefault(); const v = f.querySelector('input').value; document.activeElement.blur(); S.adding = false; addTask(v);
+  const f1 = e.target.closest('[data-form=task]');
+  if (f1) { e.preventDefault(); const v = f1.querySelector('input').value; document.activeElement.blur(); S.adding = false; addTask(v); return; }
+  const f2 = e.target.closest('[data-form=odaimport]');
+  if (f2) {
+    e.preventDefault();
+    const v = f2.querySelector('textarea').value;
+    importOdaReceipt(v).then(imp => { toast(`Importerte ${imp.items.length} varer`); delete S.errors.odaimport; render(); })
+      .catch(err => { S.errors.odaimport = err.message; render(); });
+  }
 });
 $('nav').addEventListener('click', e => {
   const b = e.target.closest('[data-nav]'); if (!b) return;
-  S.view = b.dataset.nav === 'home' ? 'home' : +b.dataset.nav; S.kidWeek = 0; window.scrollTo(0, 0); render();
+  S.view = b.dataset.nav === 'home' ? 'home' : b.dataset.nav === 'mat' ? 'mat' : +b.dataset.nav; S.kidWeek = 0; window.scrollTo(0, 0); render();
 });
 $('settingsBtn').onclick = openSettings;
 $('refreshBtn').onclick = () => syncAll(true);
