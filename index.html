@@ -1036,9 +1036,11 @@ function renderKid(i, now) {
     if (sd.timed.length) {
       const isToday = sameDay(day, now);
       const status = isToday ? schoolStatus(k, now) : `${esc(dayLabel(day))}: oppmøte <b>${fmtT(sd.first)}</b>, ferdig <b>${fmtT(sd.last)}</b>`;
+      const dayActs = eventsOn(day, e => e.kind === 'act' && kidMatch(k, e));
       schoolHTML = `<div class="status">${status}</div>` + sd.allDay.map(e => `<span class="pill" style="background:${esc(e.color)}">${esc(e.title)}</span>`).join('') +
         sd.timed.map(e => `<div class="lesson ${isToday && e.end <= now ? 'past' : ''} ${isToday && e.start <= now && e.end > now ? 'now' : ''} ${EXTRA_RE.test(e.title) ? 'extra' : ''}">
-          <div class="t">${fmtT(e.start)}–${fmtT(e.end)}</div><div class="n">${esc(e.title)}${e.desc ? `<small>${esc(e.desc)}</small>` : ''}</div></div>`).join('');
+          <div class="t">${fmtT(e.start)}–${fmtT(e.end)}</div><div class="n">${esc(e.title)}${e.desc ? `<small>${esc(e.desc)}</small>` : ''}</div></div>`).join('') +
+        (dayActs.length ? `<div class="ctitle" style="margin-top:14px">Aktiviteter · ${esc(dayLabel(day))}</div>${dayActs.map(e => evRow(e, day, now)).join('')}` : '');
       schoolHTML = `<div class="ctitle">Skoledag · ${esc(dayLabel(day))}</div>` + schoolHTML;
     } else schoolHTML = '<div class="ctitle">Skoledag</div><div class="empty">Ingen skoletimer registrert den neste uken.</div>';
   }
