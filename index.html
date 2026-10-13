@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Uka vår</title>
 <style>
 :root{
@@ -24,10 +25,10 @@ button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 .hidden{display:none!important}
 .muted{color:var(--muted)}
-.wrap{max-width:1100px;margin:0 auto;padding:16px 20px 110px}
+.wrap{max-width:1100px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) 110px max(20px,env(safe-area-inset-left))}
 
 /* Innlogging */
-#login{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+#login{min-height:100vh;display:grid;place-items:center;padding:calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
 .login-card{width:100%;max-width:440px;text-align:center}
 .login-card h1{font-size:clamp(34px,6vw,46px);letter-spacing:-.02em;margin:0 0 8px}
 .login-card .sub{color:var(--muted);margin:0 0 32px;font-size:17px}
@@ -132,7 +133,7 @@ button{cursor:pointer}
 .pill{display:inline-block;font-size:13px;padding:4px 10px;border-radius:999px;color:#fff;margin:0 6px 6px 0}
 
 /* Bunnmeny */
-.nav{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:999px;
+.nav{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:999px;
   background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);box-shadow:0 10px 30px rgba(16,24,40,.12);z-index:4}
 .nav button{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:7px 14px 7px 7px;border-radius:999px;font-size:15px;font-weight:500}
 .nav button.on{background:var(--accent-soft)}
@@ -239,7 +240,7 @@ button{cursor:pointer}
   .wp.wp5{grid-template-columns:repeat(5,minmax(0,1fr))}
 }
 @media (max-width:760px){
-  .wrap{padding:12px 14px 104px}
+  .wrap{padding:calc(12px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 104px max(14px,env(safe-area-inset-left))}
   .grid2{grid-template-columns:1fr}
   .top .clock{font-size:28px}
   .tt-grid{grid-template-columns:1fr}
