@@ -986,13 +986,13 @@ function tasksCard() {
 function schoolKidChips() {
   const chips = [`<button type="button" class="chip${S.schoolKid === 'all' ? ' on' : ''}" data-schoolkid="all">Alle</button>`]
     .concat(kids().map((k, i) => `<button type="button" class="chip${S.schoolKid === k.name ? ' on' : ''}" data-schoolkid="${esc(k.name)}"><i style="background:${esc(kidColor(k, i))}"></i>${esc(k.name)}</button>`));
-  return `<div class="small" style="margin:8px 0 4px">Gjelder:</div><div class="chips">${chips.join('')}</div>`;
+  return `<div class="small" style="margin-bottom:6px">Gjelder:</div><div class="chips" style="padding-bottom:8px">${chips.join('')}</div>`;
 }
 function schoolPasteForm() {
   return `<form data-form="schoolmsg" style="margin-bottom:10px">
     <div class="small" style="margin-bottom:6px">Lim inn meldingen fra skolen – vi finner ut hva du må huske og hvilken dag.</div>
-    <textarea name="t" rows="3" placeholder="F.eks: Hei! Husk at Marie må ha med badetøy til torsdag." style="width:100%;border-radius:12px;border:1px solid var(--line);background:var(--bg1);padding:10px;font:inherit;color:inherit;resize:vertical"></textarea>
     ${schoolKidChips()}
+    <textarea name="t" rows="3" placeholder="F.eks: Hei! Husk at Marie må ha med badetøy til torsdag." style="width:100%;border-radius:12px;border:1px solid var(--line);background:var(--bg1);padding:10px;font:inherit;color:inherit;resize:vertical"></textarea>
     <button class="btn primary" style="margin-top:8px">Legg i huskelisten</button></form>${errBox('schoolmsg')}`;
 }
 function taskRow(t) {
@@ -1375,7 +1375,7 @@ $('settings').addEventListener('click', e => { if (e.target.id === 'settings') c
 $('view').addEventListener('click', async e => {
   const t = e.target.closest('[data-act],[data-chip],[data-day],[data-kid],[data-schoolkid]'); if (!t) return;
   if (t.dataset.chip) { S.chip = t.dataset.chip; return render(); }
-  if (t.dataset.schoolkid) { S.schoolKid = t.dataset.schoolkid; return render(); }
+  if (t.dataset.schoolkid) { S.schoolKid = t.dataset.schoolkid; t.blur(); return render(); }
   if (t.dataset.day) { S.selDay = parseDate(t.dataset.day); return render(); }
   const a = t.dataset.act;
   if (!a && t.dataset.kid != null) { S.view = +t.dataset.kid; S.kidWeek = 0; window.scrollTo(0, 0); return render(); }
