@@ -67,6 +67,9 @@ button{cursor:pointer}
 .wx-hours{display:flex;gap:18px;margin-bottom:8px}
 .wx-hours div{text-align:center;font-size:13px}
 .wx-hours .ic{font-size:20px;display:block;margin:2px 0}
+.fw-row{display:flex;flex-wrap:wrap;gap:8px 16px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)}
+.fw-item{display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}
+.fw-item .ic{font-size:16px}
 
 /* Avganger */
 .dep{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
@@ -337,7 +340,7 @@ const LS = {
 
 const DEFAULT_SHARED = () => ({
   v: 2,
-  cfg: { kids: [], activityCals: null, stop: null, route: null, place: { name: 'Lillestrøm', lat: 59.956, lon: 11.050 }, taskList: '' },
+  cfg: { kids: [], activityCals: null, stop: null, route: null, place: { name: 'Lillestrøm', lat: 59.956, lon: 11.050 }, friendPlaces: [], taskList: '' },
   chores: [], log: [], payouts: [],
   pantry: { imports: [], used: [] }, lunchbox: []
 });
@@ -856,9 +859,8 @@ const WXTXT = { clearsky: 'Klarvær', fair: 'Lettskyet', partlycloudy: 'Delvis s
   heavyrain: 'Kraftig regn', lightrainshowers: 'Lette regnbyger', rainshowers: 'Regnbyger', lightsnow: 'Lett snø', snow: 'Snø', sleet: 'Sludd', lightsleet: 'Lett sludd' };
 const wxIcon = s => { if (!s) return '·'; const night = /_night/.test(s); if (night && /clearsky|fair/.test(s)) return '🌙'; const f = WX.find(([r]) => r.test(s)); return f ? f[1] : '☁️'; };
 const wxText = s => s ? (WXTXT[s.replace(/_(day|night|polartwilight)$/, '')] || '') : '';
-async function loadWeather() {
-  const p = cfg().place; if (!p) return;
-  const r = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${p.lat.toFixed(3)}&lon=${p.lon.toFixed(3)}`);
+async function fetchWx(lat, lon) {
+  const r = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`);
   if (!r.ok) throw new Error('MET ' + r.status);
   const j = await r.json(); const ts = j.properties.timeseries;
   const now = Date.now();
@@ -866,8 +868,14 @@ async function loadWeather() {
   const pick = t => ({ time: new Date(t.time), temp: t.data.instant.details.air_temperature, wind: t.data.instant.details.wind_speed,
     sym: (t.data.next_1_hours || t.data.next_6_hours || {}).summary && (t.data.next_1_hours || t.data.next_6_hours).summary.symbol_code,
     rain: ((t.data.next_1_hours || {}).details || {}).precipitation_amount });
-  S.weather = { now: pick(ts[i0]), hours: [2, 4, 6].map(h => ts[i0 + h]).filter(Boolean).map(pick) };
+  return { now: pick(ts[i0]), hours: [2, 4, 6].map(h => ts[i0 + h]).filter(Boolean).map(pick) };
+}
+async function loadWeather() {
+  const p = cfg().place; if (!p) return;
+  S.weather = await fetchWx(p.lat, p.lon);
   delete S.errors.weather;
+  const fps = cfg().friendPlaces || [];
+  S.friendWx = await Promise.all(fps.map(fp => fetchWx(fp.lat, fp.lon).then(w => ({ label: fp.label, name: fp.name, now: w.now })).catch(() => null)));
 }
 
 // =================== AVGANGER (Entur) ===================
@@ -1002,11 +1010,13 @@ const errBox = k => S.errors[k] ? `<div class="empty">${esc(S.errors[k])}</div>`
 function weatherCard() {
   const w = S.weather, p = cfg().place;
   if (!w) return `<section class="card"><div class="ctitle">Vær</div>${errBox('weather') || '<div class="empty">Henter vær …</div>'}</section>`;
+  const fw = (S.friendWx || []).filter(Boolean);
   return `<section class="card">
     <div class="wx-now"><span class="ic">${wxIcon(w.now.sym)}</span><span class="temp">${Math.round(w.now.temp)}°</span></div>
     <div class="wx-place">${esc(p.name)} <span class="muted">${esc(wxText(w.now.sym))}</span></div>
     <div class="wx-hours">${w.hours.map(h => `<div><span class="muted">${fmtT(h.time)}</span><span class="ic">${wxIcon(h.sym)}</span>${Math.round(h.temp)}°</div>`).join('')}</div>
     <div class="small">Vind ${w.now.wind.toFixed(1)} m/s${w.now.rain != null ? ` · ${w.now.rain} mm neste time` : ''} · MET Norway CC BY 4.0</div>
+    ${fw.length ? `<div class="fw-row">${fw.map(f => `<div class="fw-item"><span class="ic">${wxIcon(f.now.sym)}</span><b>${Math.round(f.now.temp)}°</b><span class="muted">${esc(f.label || f.name)}</span></div>`).join('')}</div>` : ''}
   </section>`;
 }
 function depsCard() {
@@ -1289,6 +1299,7 @@ function openSettings() {
     if (!draft.kids.length) draft.kids = [{ name: '', school: '', cals: [] }];
   }
   if (!draft.activityCals) draft.activityCals = activityIds();
+  if (!draft.friendPlaces) draft.friendPlaces = [];
   renderSettings();
   $('settings').classList.remove('hidden');
 }
@@ -1352,6 +1363,18 @@ function renderSettings() {
     <div class="addrow"><input type="text" id="placeQ" placeholder="Søk etter sted eller adresse"><button type="button" data-sact="placesearch">Søk</button></div>
     <div id="placeRes"></div>
 
+    <h3>Vær andre steder</h3>
+    <p class="hint">Vis værvarsel for opptil 3 andre steder, f.eks. der besteforeldre eller venner bor.</p>
+    ${d.friendPlaces.map((fp, i) => `<div class="kidbox" data-fprow="${i}">
+      <div class="frow kid">
+        <input type="text" data-f="label" placeholder="Hvem/hva (f.eks. Mormor)" value="${esc(fp.label || '')}">
+        <div class="cur" style="margin:0">${fp.name ? `<b>${esc(fp.name)}</b>` : '<span class="muted">Ikke valgt sted</span>'}</div>
+        <button class="x" data-sact="delfp" data-i="${i}" aria-label="Fjern">✕</button></div>
+      <div class="addrow" style="margin-top:4px"><input type="text" id="fpQ${i}" placeholder="Søk etter sted"><button type="button" data-sact="fpsearch" data-i="${i}">Søk</button></div>
+      <div id="fpRes${i}"></div>
+    </div>`).join('')}
+    ${d.friendPlaces.length < 3 ? `<button class="btn small" data-sact="addfp">+ Legg til sted</button>` : ''}
+
     <h3>Tema på denne skjermen</h3>
     <select id="themeSel"><option value="auto">Automatisk (mørkt kl. 21–06)</option><option value="light">Lyst</option><option value="dark">Mørkt</option></select>
 
@@ -1377,6 +1400,10 @@ function readDraft() {
   const boxes = document.querySelectorAll('[data-cal]');
   if (boxes.length) draft.activityCals = [...boxes].filter(b => b.checked).map(b => b.dataset.cal);
   const tl = document.querySelector('[data-g=taskList]'); if (tl) draft.taskList = tl.value;
+  document.querySelectorAll('[data-fprow]').forEach(r => {
+    const fp = draft.friendPlaces[+r.dataset.fprow]; if (!fp) return;
+    const el = r.querySelector('[data-f=label]'); if (el) fp.label = el.value.trim();
+  });
 }
 async function searchInto(inputId, resId, layers, onPick) {
   const q = $(inputId).value.trim(); if (!q) return;
@@ -1398,6 +1425,10 @@ $('sheet').addEventListener('click', async e => {
   if (a === 'tosearch') return searchInto('toQ', 'toRes', 'venue', r => { draft.route = Object.assign(baseRoute(), { to: { id: r.id, name: r.name } }); });
   if (a === 'routereset') { readDraft(); draft.route = null; renderSettings(); return; }
   if (a === 'placesearch') return searchInto('placeQ', 'placeRes', 'locality,address,venue', r => { draft.place = { name: r.name, lat: r.lat, lon: r.lon }; });
+  if (a === 'fpsearch') return searchInto('fpQ' + b.dataset.i, 'fpRes' + b.dataset.i, 'locality,address,venue', r => {
+    const i = +b.dataset.i, cur = draft.friendPlaces[i] || {};
+    draft.friendPlaces[i] = { label: cur.label || '', name: r.name, lat: r.lat, lon: r.lon };
+  });
   if (a === 'payout') {
     const name = b.dataset.kid, bal = balance(name);
     const v = prompt(`Hvor mye er utbetalt til ${name}? (saldo ${nok(bal)})`, String(Math.max(0, bal)));
@@ -1410,12 +1441,16 @@ $('sheet').addEventListener('click', async e => {
   if (a === 'delkid') draft.kids.splice(+b.dataset.i, 1);
   if (a === 'addchore') draft.chores.push({ id: uid(), title: '', price: 10, kids: [] });
   if (a === 'delchore') draft.chores.splice(+b.dataset.i, 1);
+  if (a === 'addfp' && draft.friendPlaces.length < 3) draft.friendPlaces.push({ label: '', name: '', lat: null, lon: null });
+  if (a === 'delfp') draft.friendPlaces.splice(+b.dataset.i, 1);
   if (a === 'save') {
     S.theme = $('themeSel').value; LS.set('kk.theme', S.theme); applyTheme();
     const nd = draft; closeSettings();
     const chores = nd.chores.filter(c => c.title); delete nd.chores;
     nd.kids = nd.kids.filter(k => k.name || k.school);
-    const stopChanged = JSON.stringify(nd.route) !== JSON.stringify(cfg().route), placeChanged = JSON.stringify(nd.place) !== JSON.stringify(cfg().place);
+    nd.friendPlaces = nd.friendPlaces.filter(fp => fp.name);
+    const stopChanged = JSON.stringify(nd.route) !== JSON.stringify(cfg().route),
+      placeChanged = JSON.stringify(nd.place) !== JSON.stringify(cfg().place) || JSON.stringify(nd.friendPlaces) !== JSON.stringify(cfg().friendPlaces);
     await Store.mutate(d => { d.cfg = Object.assign(d.cfg, nd); d.chores = chores; });
     if (stopChanged) loadDeps().then(render).catch(() => {});
     if (placeChanged) loadWeather().then(render).catch(() => {});
@@ -1427,6 +1462,8 @@ $('sheet').addEventListener('click', async e => {
 $('sheet').addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   const map = { fromQ: 'fromsearch', toQ: 'tosearch', placeQ: 'placesearch' };
+  const fpm = e.target.id.match(/^fpQ(\d+)$/);
+  if (fpm) { e.preventDefault(); const b = $('sheet').querySelector(`[data-sact="fpsearch"][data-i="${fpm[1]}"]`); b && b.click(); return; }
   const act = map[e.target.id]; if (!act) return;
   e.preventDefault(); const b = $('sheet').querySelector(`[data-sact="${act}"]`); b && b.click();
 });
